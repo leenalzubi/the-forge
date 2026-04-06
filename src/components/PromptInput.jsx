@@ -1,4 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Flame } from 'lucide-react'
+import {
+  fetchGithubModelsProxyConfigured,
+  hasGithubModelsClientToken,
+} from '../api/githubModelsClient.js'
 import { useForge } from '../store/useForgeStore.js'
 
 /**
@@ -23,10 +28,41 @@ export default function PromptInput({
   const { agentA, agentB, agentC } = state.config
   const modelBadges = [agentA, agentB, agentC]
 
-  const hasToken = Boolean(
-    import.meta.env.VITE_GITHUB_TOKEN &&
-      String(import.meta.env.VITE_GITHUB_TOKEN).trim()
+  const clientToken = hasGithubModelsClientToken()
+  const needsProxyProbe = import.meta.env.PROD && !clientToken
+  const [probe, setProbe] = useState(
+    () =>
+      needsProxyProbe ? { done: false, ok: false } : { done: true, ok: false }
   )
+
+  useEffect(() => {
+    if (!needsProxyProbe) return
+    let cancelled = false
+    fetchGithubModelsProxyConfigured().then((ok) => {
+      if (!cancelled) setProbe({ done: true, ok })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [needsProxyProbe])
+
+  const hasToken =
+    clientToken ||
+    (needsProxyProbe && probe.done && probe.ok)
+
+  const tokenHint = clientToken
+    ? null
+    : import.meta.env.PROD
+      ? !probe.done
+        ? 'Checking GitHub Models (server)…'
+        : !probe.ok
+          ? 'Add GITHUB_MODELS_PAT in Vercel → Environment Variables, then redeploy (do not rely on linking GitHub to the project)'
+          : null
+      : 'Add VITE_GITHUB_TOKEN to .env.local'
+
+  const statusMessage = hasToken
+    ? 'GitHub Models connected'
+    : tokenHint ?? 'GitHub Models unavailable'
 
   return (
     <section className="rounded-forge-card flex flex-col gap-5 border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-forge-card sm:p-8">
@@ -84,7 +120,7 @@ export default function PromptInput({
             className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasToken ? 'bg-[var(--agree)]' : 'bg-[var(--diverge)]'}`}
             aria-hidden
           />
-          {hasToken ? 'GitHub Models connected' : 'Add VITE_GITHUB_TOKEN to .env.local'}
+          {statusMessage}
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           <button

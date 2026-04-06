@@ -77,11 +77,11 @@ function parseSynthesisOutput(raw) {
   if (attrBlock) {
     for (const line of attrBlock.split('\n')) {
       const t = line.trim()
-      let m = t.match(/^CLAUDE:\s*(.*)$/i)
+      let m = t.match(/^AGENT_A:\s*(.*)$/i)
       if (m) attributions.a = m[1].trim()
-      m = t.match(/^DEEPSEEK:\s*(.*)$/i)
+      m = t.match(/^AGENT_B:\s*(.*)$/i)
       if (m) attributions.b = m[1].trim()
-      m = t.match(/^LLAMA:\s*(.*)$/i)
+      m = t.match(/^AGENT_C:\s*(.*)$/i)
       if (m) attributions.c = m[1].trim()
     }
   }

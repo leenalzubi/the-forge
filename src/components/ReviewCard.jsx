@@ -46,9 +46,15 @@ function CrossReviewAgentCard({ border, dot, title, body, regionLabel }) {
  *   aReviews: string
  *   bReviews: string
  *   cReviews: string
+ *   config: {
+ *     agentA: { name: string }
+ *     agentB: { name: string }
+ *     agentC: { name: string }
+ *   }
  * }} props
  */
-function ReviewCard({ roundNum, aReviews, bReviews, cReviews }) {
+function ReviewCard({ roundNum, aReviews, bReviews, cReviews, config }) {
+  const { agentA, agentB, agentC } = config
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -70,22 +76,22 @@ function ReviewCard({ roundNum, aReviews, bReviews, cReviews }) {
         <CrossReviewAgentCard
           border="var(--agent-a)"
           dot="bg-[var(--agent-a)]"
-          title="CLAUDE reviewing DEEPSEEK R1 + LLAMA 4"
-          regionLabel="Claude cross-review"
+          title={`${agentA.name} reviewing ${agentB.name} + ${agentC.name}`}
+          regionLabel={`${agentA.name} cross-review`}
           body={aReviews}
         />
         <CrossReviewAgentCard
           border="var(--agent-b)"
           dot="bg-[var(--agent-b)]"
-          title="DEEPSEEK R1 reviewing CLAUDE + LLAMA 4"
-          regionLabel="DeepSeek R1 cross-review"
+          title={`${agentB.name} reviewing ${agentA.name} + ${agentC.name}`}
+          regionLabel={`${agentB.name} cross-review`}
           body={bReviews}
         />
         <CrossReviewAgentCard
           border="var(--agent-c)"
           dot="bg-[var(--agent-c)]"
-          title="LLAMA 4 reviewing CLAUDE + DEEPSEEK R1"
-          regionLabel="Llama 4 cross-review"
+          title={`${agentC.name} reviewing ${agentA.name} + ${agentB.name}`}
+          regionLabel={`${agentC.name} cross-review`}
           body={cReviews}
         />
       </div>

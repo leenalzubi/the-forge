@@ -170,6 +170,7 @@ export default function App() {
                     aReviews={review.aReviews}
                     bReviews={review.bReviews}
                     cReviews={review.cReviews}
+                    config={cfg}
                   />
                 ) : null}
               </div>

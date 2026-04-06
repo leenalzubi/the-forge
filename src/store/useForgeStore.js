@@ -19,9 +19,17 @@ function createInitialState() {
     error: null,
     config: {
       maxRounds: 2,
-      agentA: { name: 'Claude', model: 'anthropic/claude-4-sonnet', color: '#2563EB' },
-      agentB: { name: 'DeepSeek R1', model: 'deepseek/deepseek-r1', color: '#059669' },
-      agentC: { name: 'Llama 4', model: 'meta/llama-4-maverick', color: '#7C3AED' },
+      agentA: { name: 'GPT-4o mini', model: 'openai/gpt-4o-mini', color: '#2563EB' },
+      agentB: {
+        name: 'Phi-4 mini reasoning',
+        model: 'microsoft/phi-4-mini-reasoning',
+        color: '#059669',
+      },
+      agentC: {
+        name: 'Mistral Small',
+        model: 'mistral-ai/mistral-small-2503',
+        color: '#7C3AED',
+      },
     },
   }
 }

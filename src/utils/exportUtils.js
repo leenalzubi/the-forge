@@ -19,7 +19,9 @@ export function exportToMarkdown(state) {
   const synthesis = state.synthesis ?? null
   const config = state.config && typeof state.config === 'object' ? state.config : {}
 
-  const cName = config.agentC?.name ?? 'Llama 4'
+  const aName = config.agentA?.name ?? 'Agent A'
+  const bName = config.agentB?.name ?? 'Agent B'
+  const cName = config.agentC?.name ?? 'Agent C'
 
   const dateStr = new Date().toLocaleString(undefined, {
     dateStyle: 'medium',
@@ -34,16 +36,16 @@ export function exportToMarkdown(state) {
   const r1 = rounds.find((r) => r.roundNum === 1) ?? rounds[0]
   if (r1) {
     lines.push('## Round 1', '')
-    lines.push('### Claude', '', (r1.agentA ?? '').trim(), '')
-    lines.push('### Copilot', '', (r1.agentB ?? '').trim(), '')
+    lines.push(`### ${aName}`, '', (r1.agentA ?? '').trim(), '')
+    lines.push(`### ${bName}`, '', (r1.agentB ?? '').trim(), '')
     lines.push(`### ${cName}`, '', (r1.agentC ?? '').trim(), '')
   }
 
   if (reviews.length > 0) {
     lines.push('## Cross-Reviews', '')
     for (const rev of [...reviews].sort((a, b) => a.roundNum - b.roundNum)) {
-      lines.push(`### Round ${rev.roundNum} — Claude`, '', (rev.aReviews ?? '').trim(), '')
-      lines.push(`### Round ${rev.roundNum} — Copilot`, '', (rev.bReviews ?? '').trim(), '')
+      lines.push(`### Round ${rev.roundNum} — ${aName}`, '', (rev.aReviews ?? '').trim(), '')
+      lines.push(`### Round ${rev.roundNum} — ${bName}`, '', (rev.bReviews ?? '').trim(), '')
       lines.push(
         `### Round ${rev.roundNum} — ${cName}`,
         '',
