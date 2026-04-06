@@ -1,9 +1,10 @@
 import { Anvil, Flame } from 'lucide-react'
 
 const EXAMPLES = [
-  'What is the strongest argument for remote-first work culture?',
-  'How should a B2B SaaS company prioritize its product roadmap?',
-  'What makes a good API design?',
+  'Is the ocean more dangerous than it was 100 years ago, or have we just gotten better at measuring the risk?',
+  'At what point does a field of study become too specialized to be useful?',
+  'Did the novel as a form peak in the 19th century?',
+  'Is expertise overrated in an age where information is free?',
 ]
 
 /**
@@ -17,7 +18,7 @@ export default function ForgeEmptyState({ onPickExample }) {
         <Flame className="h-12 w-12 md:h-14 md:w-14" strokeWidth={1.25} aria-hidden />
       </div>
       <h2 className="font-mono text-xl font-bold tracking-tight text-[var(--text-primary)] md:text-2xl">
-        Ready to Forge
+        Welcome to Babel
       </h2>
       <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
         Enter a prompt above. Three agents debate it, cross-review each other, and

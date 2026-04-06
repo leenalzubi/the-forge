@@ -10,6 +10,6 @@ export function clipInferenceText(text, maxChars = DEFAULT_MAX_USER_CHARS) {
   if (text.length <= maxChars) return text
   return (
     text.slice(0, maxChars) +
-    '\n\n[Truncated by The Forge to stay within GitHub Models input limits.]'
+    '\n\n[Truncated by Babel to stay within GitHub Models input limits.]'
   )
 }

@@ -19,13 +19,12 @@ function topContributorKey(attributions) {
 /**
  * Best-effort analytics row for Supabase `debates` table. Never throws.
  *
- * @param {Record<string, unknown>} state Forge-like snapshot (prompt, rounds, divergenceScores, synthesis, config).
+ * @param {Record<string, unknown>} state Debate snapshot (prompt, rounds, divergenceScores, synthesis, config).
  */
 export async function logDebate(state) {
   console.log('logDebate called with:', Object.keys(state ?? {}))
   try {
-    const url = import.meta.env.VITE_SUPABASE_URL
-    if (typeof url !== 'string' || !url.trim()) {
+    if (!supabase) {
       return
     }
 

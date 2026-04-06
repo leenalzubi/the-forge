@@ -22,7 +22,7 @@ export default function PromptInput({
   onRun,
   onReset,
   disabled = false,
-  placeholder = 'What should the team debate? Be specific — the richer the prompt, the sharper the forge.',
+  placeholder = 'What should the team debate? Be specific — the richer the prompt, the sharper the debate.',
 }) {
   const { state } = useForge()
   const { agentA, agentB, agentC } = state.config
@@ -75,7 +75,7 @@ export default function PromptInput({
         </p>
         <div
           className="flex flex-wrap gap-2"
-          aria-label="Models in this forge run"
+          aria-label="Models in this Babel run"
         >
           {modelBadges.map((agent) => (
             <span
@@ -130,12 +130,12 @@ export default function PromptInput({
             type="button"
             onClick={onRun}
             disabled={disabled}
-            title="Run the full debate pipeline via GitHub Models"
-            aria-label="Run the Forge (⌘ or Ctrl + Enter from prompt)"
+            title="Run Babel's full debate pipeline via GitHub Models"
+            aria-label="Run Babel (⌘ or Ctrl + Enter from prompt)"
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent-forge)] px-6 py-3 font-mono text-sm font-semibold text-white shadow-forge-card transition hover:brightness-[1.03] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
           >
             <Flame className="h-4 w-4 shrink-0" aria-hidden />
-            Run the Forge
+            Run Babel
           </button>
           <button
             type="button"

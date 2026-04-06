@@ -3,7 +3,7 @@
 function SectionDivider() {
   return (
     <div
-      className="my-16 border-t border-[var(--border)]/80 md:my-20"
+      className="mt-12 border-t border-[var(--border)]/80"
       aria-hidden
     />
   )
@@ -15,12 +15,14 @@ function SectionDivider() {
 function SectionShell({ num, title, children }) {
   return (
     <section className="scroll-mt-8">
-      <p className="font-mono text-[11px] font-medium tracking-[0.2em] text-[var(--text-muted)]">
-        {num}
-      </p>
-      <h2 className="mt-2 font-sans text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">
-        {title}
-      </h2>
+      <div className="flex flex-col gap-1">
+        <p className="font-mono text-[11px] font-medium tracking-[0.2em] text-[var(--text-muted)]">
+          {num}
+        </p>
+        <h2 className="font-sans text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">
+          {title}
+        </h2>
+      </div>
       <div className="mt-8 space-y-5">{children}</div>
     </section>
   )
@@ -62,12 +64,12 @@ export default function ResearchPanel() {
   return (
     <article
       className="w-full min-w-0 pb-16 md:pb-24"
-      aria-label="About The Forge"
+      aria-label="About Babel"
     >
-      <SectionShell num="01" title="What The Forge Is">
+      <SectionShell num="01" title="What Babel Is">
         <div className="space-y-5 font-sans text-[15px] leading-[1.75] text-[var(--text-secondary)]">
           <p>
-            The Forge sends a single prompt to three AI models simultaneously:
+            Babel sends a single prompt to three AI models simultaneously:
             GPT-4o mini, Phi-4 mini reasoning, and Mistral Small. Each model
             responds independently, then reviews the other two responses, then
             a synthesis pass reconciles all three into one unified answer.
@@ -106,7 +108,7 @@ export default function ResearchPanel() {
           </ObservationCard>
           <ObservationCard title="Naturalistic data">
             Most multi-model research happens in controlled lab conditions. The
-            Forge collects real questions from real people, which is a
+            Babel collects real questions from real people, which is a
             different and valuable dataset.
           </ObservationCard>
         </div>

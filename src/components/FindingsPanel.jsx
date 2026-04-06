@@ -110,8 +110,7 @@ export default function FindingsPanel() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const url = import.meta.env.VITE_SUPABASE_URL
-      if (typeof url !== 'string' || !url.trim()) {
+      if (!supabase) {
         if (!cancelled) {
           setRows([])
           setLoading(false)
@@ -239,9 +238,7 @@ export default function FindingsPanel() {
     safePage * PAGE_SIZE
   )
 
-  const supabaseConfigured =
-    typeof import.meta.env.VITE_SUPABASE_URL === 'string' &&
-    Boolean(import.meta.env.VITE_SUPABASE_URL.trim())
+  const supabaseConfigured = Boolean(supabase)
 
   return (
     <div className="flex flex-col gap-8 pb-16">

@@ -283,9 +283,9 @@ export default function WorkflowTimeline({
         ) : null}
       </div>
 
-      {/* Desktop: full vertical timeline */}
+      {/* Desktop: full vertical timeline (max-md:hidden avoids hidden/md:* cascade bugs) */}
       <div
-        className={`hidden px-3 py-0 md:px-0 md:py-0 ${collapsed ? '' : 'md:block'}`}
+        className={`px-3 py-0 md:px-0 md:py-0 ${collapsed ? 'hidden' : 'max-md:hidden md:block'}`}
       >
         <div className="mb-4 flex items-center justify-between gap-2 pr-0">
           <h2 className="font-mono text-[11px] font-semibold tracking-widest text-[var(--text-muted)]">
@@ -310,7 +310,7 @@ export default function WorkflowTimeline({
 
       {/* Desktop: collapsed rail — icons only */}
       <div
-        className={`hidden w-full flex-col items-center ${collapsed ? 'md:flex' : ''}`}
+        className={`w-full flex-col items-center ${collapsed ? 'max-md:hidden md:flex' : 'hidden'}`}
       >
         <button
           type="button"

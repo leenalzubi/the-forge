@@ -1,6 +1,6 @@
-# The Forge
+# Babel
 
-A Vite + React app that runs a multi-agent debate via GitHub Models and optional API clients, then synthesizes a unified answer.
+Babel is a Vite + React app that runs a multi-agent debate via GitHub Models and optional API clients, then synthesizes a unified answer.
 
 ## Setup
 

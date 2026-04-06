@@ -190,7 +190,7 @@ export default function SettingsDrawer({ open, onClose }) {
 
           <section className="mt-auto border-t border-[var(--border)] pt-4">
             <h3 className="font-mono text-[11px] font-semibold text-[var(--text-primary)]">
-              The Forge v1.0 — Three-Agent Debate Engine
+              Babel v1.0 — Multi-Model Debate Engine
             </h3>
           </section>
         </div>

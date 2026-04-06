@@ -29,7 +29,7 @@ export function exportToMarkdown(state) {
   })
 
   const lines = []
-  lines.push('# The Forge — Debate Export', '')
+  lines.push('# Babel — Debate Export', '')
   lines.push(`**Prompt:** ${prompt.trim() || '_(empty)_'}`, '')
   lines.push(`**Date:** ${dateStr}`, '')
 
@@ -94,13 +94,13 @@ export async function copyToClipboard(text) {
 }
 
 /**
- * Builds markdown from state and triggers download as `forge-export-{timestamp}.md`.
+ * Builds markdown from state and triggers download as `babel-export-{timestamp}.md`.
  * @param {ForgeExportState | Record<string, unknown>} state
  */
 export function downloadMarkdown(state) {
   const md = exportToMarkdown(state)
   const ts = new Date().toISOString().replace(/[:.]/g, '-')
-  const filename = `forge-export-${ts}.md`
+  const filename = `babel-export-${ts}.md`
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

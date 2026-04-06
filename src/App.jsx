@@ -8,6 +8,20 @@ import {
   useState,
 } from 'react'
 import { Settings } from 'lucide-react'
+import ErrorBanner from './components/ErrorBanner.jsx'
+import FindingsPanel from './components/FindingsPanel.jsx'
+import ResearchPanel from './components/ResearchPanel.jsx'
+import ForgeEmptyState from './components/ForgeEmptyState.jsx'
+import LiveAgentStrip from './components/LiveAgentStrip.jsx'
+import PromptInput from './components/PromptInput.jsx'
+import ReviewCard from './components/ReviewCard.jsx'
+import RoundCard from './components/RoundCard.jsx'
+import SettingsDrawer from './components/SettingsDrawer.jsx'
+import WorkflowTimeline from './components/WorkflowTimeline.jsx'
+import { useDebateEngine } from './hooks/useDebateEngine.js'
+import { useForge } from './store/useForgeStore.js'
+
+const SynthesisPanel = lazy(() => import('./components/SynthesisPanel.jsx'))
 
 const WORKFLOW_SIDEBAR_COLLAPSED_KEY = 'forge-workflow-sidebar-collapsed'
 
@@ -18,19 +32,6 @@ function readWorkflowSidebarCollapsed() {
     return false
   }
 }
-import ErrorBanner from './components/ErrorBanner.jsx'
-import FindingsPanel from './components/FindingsPanel.jsx'
-import ResearchPanel from './components/ResearchPanel.jsx'
-import ForgeEmptyState from './components/ForgeEmptyState.jsx'
-import LiveAgentStrip from './components/LiveAgentStrip.jsx'
-import PromptInput from './components/PromptInput.jsx'
-import ReviewCard from './components/ReviewCard.jsx'
-import RoundCard from './components/RoundCard.jsx'
-const SynthesisPanel = lazy(() => import('./components/SynthesisPanel.jsx'))
-import SettingsDrawer from './components/SettingsDrawer.jsx'
-import WorkflowTimeline from './components/WorkflowTimeline.jsx'
-import { useDebateEngine } from './hooks/useDebateEngine.js'
-import { useForge } from './store/useForgeStore.js'
 
 const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
 
@@ -64,7 +65,10 @@ export default function App() {
   const running = state.status === 'running'
 
   const showWorkflowSidebar =
-    mainTab === 'forge' && state.status !== 'idle'
+    mainTab === 'forge' &&
+    (state.status !== 'idle' ||
+      state.rounds.length > 0 ||
+      state.synthesis != null)
 
   useEffect(() => {
     try {
@@ -156,7 +160,7 @@ export default function App() {
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span className="font-mono text-[11px] font-semibold tracking-[0.28em] text-[var(--text-primary)]">
-              THE FORGE
+              BABEL
             </span>
             <div className="order-3 flex w-full flex-wrap items-center justify-center gap-2 md:order-none md:flex-1 md:justify-end md:pr-4">
               <HeaderAgentPill name={cfg.agentA.name} color={cfg.agentA.color} />
@@ -189,7 +193,7 @@ export default function App() {
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Forge
+              Babel
             </button>
             <button
               type="button"
