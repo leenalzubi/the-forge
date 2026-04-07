@@ -38,6 +38,13 @@ function contributorDisplay(c, row) {
   return model ?? String(c).toUpperCase()
 }
 
+/** @param {string} raw @param {number} fallback */
+function clampPctInput(raw, fallback) {
+  const n = Number.parseInt(String(raw).trim(), 10)
+  if (Number.isNaN(n)) return fallback
+  return Math.min(100, Math.max(0, n))
+}
+
 function TableSkeleton() {
   return (
     <div className="overflow-hidden rounded-forge-card border border-[var(--border)]">
@@ -146,6 +153,8 @@ export default function FindingsPanel() {
             'response_length_c',
             'most_flexible',
             'most_combative',
+            'bias_flagged',
+            'validation_status',
           ].join(',')
         )
         .order('created_at', { ascending: false })
@@ -333,6 +342,18 @@ export default function FindingsPanel() {
       c: { avg: avgLen('response_length_c'), label: modeModel('model_c') },
     }
 
+    const rowsWithBiasFlag = rows.filter(
+      (r) => typeof r.bias_flagged === 'boolean'
+    )
+    const synthesisBiasRate =
+      rowsWithBiasFlag.length === 0
+        ? null
+        : Math.round(
+            (rowsWithBiasFlag.filter((r) => r.bias_flagged === true).length /
+              rowsWithBiasFlag.length) *
+              100
+          )
+
     return {
       n,
       combativeRow,
@@ -344,6 +365,7 @@ export default function FindingsPanel() {
       dominantDenom,
       namedPct,
       personality,
+      synthesisBiasRate,
     }
   }, [rows])
 
@@ -467,7 +489,7 @@ export default function FindingsPanel() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <StatCard
                   title="Most combative round"
                   value={
@@ -503,6 +525,15 @@ export default function FindingsPanel() {
                   title="Named each other"
                   value={`${agentDynamics.namedPct}%`}
                   subtitle="Debates where at least one cross-review mentioned GPT, Phi, or Mistral"
+                />
+                <StatCard
+                  title="Synthesis bias rate"
+                  value={
+                    agentDynamics.synthesisBiasRate == null
+                      ? '—'
+                      : `${agentDynamics.synthesisBiasRate}%`
+                  }
+                  subtitle="Debates where validators flagged the synthesis as unfair to one or more positions"
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
@@ -578,34 +609,53 @@ export default function FindingsPanel() {
 
       <div className="flex flex-col gap-4 rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-4 md:flex-row md:flex-wrap md:items-end">
         <div className="flex min-w-[200px] flex-1 flex-col gap-2">
-          <label className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Divergence range ({divMin}% – {divMax}%)
-          </label>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={divMin}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                setDivMin(Math.min(v, divMax))
-              }}
-              className="h-2 flex-1 accent-[var(--accent-forge)]"
-              aria-label="Minimum divergence percent"
-            />
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={divMax}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                setDivMax(Math.max(v, divMin))
-              }}
-              className="h-2 flex-1 accent-[var(--accent-forge)]"
-              aria-label="Maximum divergence percent"
-            />
+          <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Divergence range
+          </p>
+          <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-primary)]">
+            <label
+              htmlFor="findings-div-min"
+              className="inline-flex items-center gap-1.5"
+            >
+              <span className="text-[var(--text-muted)]">Min</span>
+              <input
+                id="findings-div-min"
+                type="number"
+                min={0}
+                max={100}
+                value={divMin}
+                onChange={(e) => {
+                  const v = clampPctInput(e.target.value, divMin)
+                  setDivMin(Math.min(v, divMax))
+                }}
+                className="w-[3.25rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-1.5 py-1 text-[11px] tabular-nums text-[var(--text-primary)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                aria-label="Minimum divergence percent"
+              />
+              <span className="text-[var(--text-muted)]">%</span>
+            </label>
+            <span className="text-[var(--text-muted)]" aria-hidden>
+              —
+            </span>
+            <label
+              htmlFor="findings-div-max"
+              className="inline-flex items-center gap-1.5"
+            >
+              <span className="text-[var(--text-muted)]">Max</span>
+              <input
+                id="findings-div-max"
+                type="number"
+                min={0}
+                max={100}
+                value={divMax}
+                onChange={(e) => {
+                  const v = clampPctInput(e.target.value, divMax)
+                  setDivMax(Math.max(v, divMin))
+                }}
+                className="w-[3.25rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-1.5 py-1 text-[11px] tabular-nums text-[var(--text-primary)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                aria-label="Maximum divergence percent"
+              />
+              <span className="text-[var(--text-muted)]">%</span>
+            </label>
           </div>
         </div>
         <div className="flex min-w-[180px] flex-col gap-1">

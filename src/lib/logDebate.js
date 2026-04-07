@@ -68,6 +68,20 @@ export async function logDebate(state) {
     const rounds = Array.isArray(state.rounds) ? state.rounds.length : 0
 
     const cfg = state.config && typeof state.config === 'object' ? state.config : {}
+    const r0 =
+      Array.isArray(state.rounds) && state.rounds.length > 0
+        ? state.rounds[0]
+        : null
+    const ar = state.agentResponses?.a ?? r0?.agentA
+    const br = state.agentResponses?.b ?? r0?.agentB
+    const cr = state.agentResponses?.c ?? r0?.agentC
+    if (ar == null || br == null || cr == null) {
+      console.warn(
+        '[logDebate] Skipping Supabase insert: missing round 1 agent response(s)'
+      )
+      return
+    }
+
     const agentA = cfg.agentA && typeof cfg.agentA === 'object' ? cfg.agentA : {}
     const agentB = cfg.agentB && typeof cfg.agentB === 'object' ? cfg.agentB : {}
     const agentC = cfg.agentC && typeof cfg.agentC === 'object' ? cfg.agentC : {}
@@ -89,6 +103,25 @@ export async function logDebate(state) {
 
     const analysis = analyseDebate(state)
 
+    const val = state.validation
+    const validation_score_b =
+      val &&
+      val.b &&
+      typeof val.b === 'object' &&
+      typeof val.b.score === 'number'
+        ? Math.round(val.b.score)
+        : null
+    const validation_score_c =
+      val &&
+      val.c &&
+      typeof val.c === 'object' &&
+      typeof val.c.score === 'number'
+        ? Math.round(val.c.score)
+        : null
+    const validation_status =
+      val && typeof val.status === 'string' ? val.status : null
+    const bias_flagged = validation_status === 'flagged'
+
     const insertData = {
       prompt_length,
       prompt_preview,
@@ -106,6 +139,10 @@ export async function logDebate(state) {
       embedding_a,
       embedding_b,
       embedding_c,
+      validation_score_b,
+      validation_score_c,
+      validation_status,
+      bias_flagged,
       ...analysis,
     }
 

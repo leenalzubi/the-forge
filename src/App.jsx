@@ -13,7 +13,6 @@ import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
-import LiveAgentStrip from './components/LiveAgentStrip.jsx'
 import PromptInput from './components/PromptInput.jsx'
 import FinalPositionCard from './components/FinalPositionCard.jsx'
 import RebuttalCard from './components/RebuttalCard.jsx'
@@ -37,6 +36,20 @@ function readWorkflowSidebarCollapsed() {
 }
 
 const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
+
+/** @param {string} pathname */
+function mainTabFromPathname(pathname) {
+  if (pathname === '/findings') return 'findings'
+  if (pathname === '/about') return 'about'
+  return 'babel'
+}
+
+/** @param {'babel' | 'findings' | 'about'} tab */
+function pathnameForMainTab(tab) {
+  if (tab === 'findings') return '/findings'
+  if (tab === 'about') return '/about'
+  return '/'
+}
 
 const DOC_TITLE_DEFAULT = 'Babel — Multi-Model Debate Engine'
 const DOC_TITLE_RUNNING = '⟳ Babel — Debate running...'
@@ -64,7 +77,10 @@ export default function App() {
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
-    /** @type {'forge' | 'findings' | 'about'} */ ('forge')
+    /** @type {'babel' | 'findings' | 'about'} */ () =>
+      typeof window !== 'undefined'
+        ? mainTabFromPathname(window.location.pathname)
+        : 'babel'
   )
   const [workflowSidebarCollapsed, setWorkflowSidebarCollapsed] = useState(
     () => readWorkflowSidebarCollapsed()
@@ -72,8 +88,45 @@ export default function App() {
 
   const running = state.status === 'running'
 
+  const navigateMainTab = useCallback(
+    /** @param {'babel' | 'findings' | 'about'} tab */ (tab) => {
+      setMainTab((prev) => {
+        if (prev === tab) return prev
+        window.history.pushState({ tab }, '', pathnameForMainTab(tab))
+        return tab
+      })
+    },
+    []
+  )
+
+  useEffect(() => {
+    const path = window.location.pathname
+    const tab = mainTabFromPathname(path)
+    if (window.history.state?.tab !== tab) {
+      window.history.replaceState({ tab }, '', pathnameForMainTab(tab))
+    }
+  }, [])
+
+  useEffect(() => {
+    const onPopState = (/** @type {PopStateEvent} */ event) => {
+      const raw =
+        event.state &&
+        typeof event.state === 'object' &&
+        'tab' in event.state
+          ? event.state.tab
+          : null
+      const tab =
+        raw === 'babel' || raw === 'findings' || raw === 'about'
+          ? raw
+          : mainTabFromPathname(window.location.pathname)
+      setMainTab(tab)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   const showWorkflowSidebar =
-    mainTab === 'forge' &&
+    mainTab === 'babel' &&
     (state.status !== 'idle' ||
       state.rounds.length > 0 ||
       state.rebuttals?.a != null ||
@@ -233,10 +286,10 @@ export default function App() {
           <div className="inline-flex max-w-full flex-wrap justify-center gap-0.5 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
             <button
               type="button"
-              onClick={() => setMainTab('forge')}
-              aria-pressed={mainTab === 'forge'}
+              onClick={() => navigateMainTab('babel')}
+              aria-pressed={mainTab === 'babel'}
               className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
-                mainTab === 'forge'
+                mainTab === 'babel'
                   ? 'bg-[var(--accent-forge)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
@@ -245,7 +298,7 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setMainTab('findings')}
+              onClick={() => navigateMainTab('findings')}
               aria-pressed={mainTab === 'findings'}
               className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
                 mainTab === 'findings'
@@ -257,7 +310,7 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setMainTab('about')}
+              onClick={() => navigateMainTab('about')}
               aria-pressed={mainTab === 'about'}
               className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
                 mainTab === 'about'
@@ -286,8 +339,6 @@ export default function App() {
                 disabled={running}
               />
             </div>
-
-            {running ? <LiveAgentStrip state={state} /> : null}
 
             <ErrorBanner
               message={state.error}

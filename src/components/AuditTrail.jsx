@@ -351,7 +351,8 @@ function synthesisLineAgentPill(line, config) {
 
 export default function AuditTrail() {
   const { state } = useForge()
-  const { audit, auditLoading, auditError, config, synthesis } = state
+  const { audit, auditLoading, auditError, config, synthesis, validation } =
+    state
   const concessions = Array.isArray(synthesis?.concessions)
     ? synthesis.concessions
     : []
@@ -416,7 +417,14 @@ export default function AuditTrail() {
 
   const colLabels = ['GPT-4o', 'Phi-4', 'Mistral']
 
-  if (!auditLoading && !audit && !auditError && concessions.length === 0 && heldFirmLines.length === 0) {
+  if (
+    !auditLoading &&
+    !audit &&
+    !auditError &&
+    concessions.length === 0 &&
+    heldFirmLines.length === 0 &&
+    validation == null
+  ) {
     return null
   }
 
@@ -660,6 +668,94 @@ export default function AuditTrail() {
             </>
           )}
         </>
+      ) : null}
+
+      {validation?.status === 'pending' ? (
+        <div
+          className="mt-10 flex items-center gap-2 rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-4 font-mono text-[13px] text-[var(--text-muted)]"
+          role="status"
+        >
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+          Peer validation in progress…
+        </div>
+      ) : null}
+
+      {validation &&
+      validation.b &&
+      validation.c &&
+      (validation.status === 'approved' || validation.status === 'flagged') ? (
+        <div
+          className={`mt-10 rounded-[6px] border border-dashed px-4 py-5 md:px-6 ${
+            validation.status === 'flagged'
+              ? 'border-l-[3px] border-l-[#D97706] bg-[#FFFBEB]/90'
+              : 'border-l-[3px] border-l-[#16A34A] bg-[#F0FDF4]/90'
+          } border-[var(--border)]`}
+        >
+          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Peer validation
+          </h3>
+          <p
+            className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]"
+            style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+          >
+            The two non-synthesizing agents reviewed the synthesis for fairness
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {[
+              { key: 'b', spec: config.agentB, v: validation.b },
+              { key: 'c', spec: config.agentC, v: validation.c },
+            ].map(({ key, spec, v }) => (
+              <div
+                key={key}
+                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)]/90 p-3"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="font-[family-name:var(--font-body)] text-[15px] font-medium text-[var(--text-primary)]"
+                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                  >
+                    {spec.name}
+                  </span>
+                  <span className="rounded-full border border-[var(--border)] bg-[var(--bg-base)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-medium text-[var(--text-primary)]">
+                    {v.score}/10
+                  </span>
+                </div>
+                <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)]">
+                  fair_to_me:{' '}
+                  <span className="text-[var(--text-primary)]">
+                    {v.fair_to_me ? 'yes' : 'no'}
+                  </span>{' '}
+                  · fair_to_others:{' '}
+                  <span className="text-[var(--text-primary)]">
+                    {v.fair_to_others ? 'yes' : 'no'}
+                  </span>
+                </p>
+                {v.bias_note ? (
+                  <p
+                    className="mt-2 text-[14px] leading-relaxed text-[var(--text-secondary)]"
+                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                  >
+                    <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
+                      bias_note:{' '}
+                    </span>
+                    {str(v.bias_note)}
+                  </p>
+                ) : null}
+                {v.missing ? (
+                  <p
+                    className="mt-2 text-[14px] leading-relaxed text-[var(--text-secondary)]"
+                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                  >
+                    <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
+                      missing:{' '}
+                    </span>
+                    {str(v.missing)}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
       ) : null}
     </section>
   )

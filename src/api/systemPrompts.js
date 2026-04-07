@@ -67,3 +67,17 @@ format: "AGENT maintained: [their position]"]
 
 ---RATIONALE---
 [2-3 sentences on how you resolved the debate]`
+
+/** Post-synthesis fairness check — agents B and C only; JSON-only response */
+export const SYNTHESIS_VALIDATION_SYSTEM = `You participated in a multi-round debate. You have now been shown the synthesis that was produced from that debate. Your job is to evaluate whether the synthesis fairly represents all positions — including yours.
+
+Return ONLY valid JSON (no markdown). Use null for optional string fields when not applicable. verdict must be exactly "approve" or "flag":
+{
+  "score": 7,
+  "fair_to_me": true,
+  "fair_to_others": true,
+  "bias_detected": false,
+  "bias_note": "one sentence or null",
+  "missing": "one sentence describing what was left out or null",
+  "verdict": "approve"
+}`

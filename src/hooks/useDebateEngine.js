@@ -8,6 +8,7 @@ import {
   FINAL_POSITION_SYSTEM,
   REBUTTAL_SYSTEM,
   SYNTHESIS_SYSTEM,
+  SYNTHESIS_VALIDATION_SYSTEM,
 } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
 import { runAudit } from '../lib/auditDebate.js'
@@ -17,6 +18,13 @@ import { extractReviewSectionAboutPeer } from '../lib/extractCrossReviewSection.
 import { getEmbedding } from '../lib/getEmbedding.js'
 import { logDebate } from '../lib/logDebate.js'
 import { parseSynthesisOutput } from '../lib/parseSynthesisOutput.js'
+import {
+  buildSynthesisValidationUserMessage,
+  computeValidationStatus,
+  fallbackFlaggedValidation,
+  normalizeValidationRecord,
+  parseValidationJson,
+} from '../lib/synthesisValidation.js'
 import { useForge } from '../store/useForgeStore.js'
 
 /**
@@ -206,7 +214,8 @@ export function useDebateEngine() {
         const ra = await callGitHubModel(
           config.agentA.model,
           [{ role: 'user', content: promptClipped }],
-          AGENT_A_ROUND1_SYSTEM
+          AGENT_A_ROUND1_SYSTEM,
+          { agentName: config.agentA.name }
         )
         dispatch({
           type: 'SET_AGENT_DONE',
@@ -222,7 +231,8 @@ export function useDebateEngine() {
         const rb = await callGitHubModel(
           config.agentB.model,
           [{ role: 'user', content: promptClipped }],
-          AGENT_B_ROUND1_SYSTEM
+          AGENT_B_ROUND1_SYSTEM,
+          { agentName: config.agentB.name }
         )
         dispatch({
           type: 'SET_AGENT_DONE',
@@ -238,7 +248,8 @@ export function useDebateEngine() {
         const rc = await callGitHubModel(
           config.agentC.model,
           [{ role: 'user', content: promptClipped }],
-          AGENT_C_ROUND1_SYSTEM
+          AGENT_C_ROUND1_SYSTEM,
+          { agentName: config.agentC.name }
         )
         dispatch({
           type: 'SET_AGENT_DONE',
@@ -587,6 +598,60 @@ export function useDebateEngine() {
           },
         })
 
+        dispatch({
+          type: 'SET_VALIDATION',
+          payload: { status: 'pending', b: null, c: null },
+        })
+
+        const msgB = clipInferenceText(
+          buildSynthesisValidationUserMessage(
+            userPrompt.trim(),
+            rb,
+            parsed.output
+          ),
+          48_000
+        )
+        const msgC = clipInferenceText(
+          buildSynthesisValidationUserMessage(
+            userPrompt.trim(),
+            rc,
+            parsed.output
+          ),
+          48_000
+        )
+
+        const [rawB, rawC] = await Promise.all([
+          callGitHubModel(
+            config.agentB.model,
+            [{ role: 'user', content: msgB }],
+            SYNTHESIS_VALIDATION_SYSTEM,
+            { agentName: config.agentB.name, maxTokens: 1024 }
+          ),
+          callGitHubModel(
+            config.agentC.model,
+            [{ role: 'user', content: msgC }],
+            SYNTHESIS_VALIDATION_SYSTEM,
+            { agentName: config.agentC.name, maxTokens: 1024 }
+          ),
+        ])
+
+        const normB =
+          normalizeValidationRecord(parseValidationJson(rawB)) ??
+          fallbackFlaggedValidation()
+        const normC =
+          normalizeValidationRecord(parseValidationJson(rawC)) ??
+          fallbackFlaggedValidation()
+        const validationStatus = computeValidationStatus(normB, normC)
+
+        dispatch({
+          type: 'SET_VALIDATION',
+          payload: {
+            b: normB,
+            c: normC,
+            status: validationStatus,
+          },
+        })
+
         dispatch({ type: 'SET_STATUS', payload: 'complete' })
         void logDebate({
           ...debateBase,
@@ -596,6 +661,11 @@ export function useDebateEngine() {
             rationale: parsed.rationale,
             concessions: parsed.concessions,
             heldFirm: parsed.heldFirm,
+          },
+          validation: {
+            b: normB,
+            c: normC,
+            status: validationStatus,
           },
         })
         scheduleDebateAudit(dispatch, {

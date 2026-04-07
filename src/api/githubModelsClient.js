@@ -106,11 +106,53 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** User-facing prefix; ErrorBanner treats messages containing "Content filter" specially. */
+export const CONTENT_FILTER_MESSAGE_PREFIX = 'Content filter:'
+
+/**
+ * @param {unknown} err
+ * @returns {boolean}
+ */
+export function isContentFilterError(err) {
+  return (
+    err instanceof Error &&
+    err.message.includes(CONTENT_FILTER_MESSAGE_PREFIX)
+  )
+}
+
+const CONTENT_POLICY_MARK = 'content management policy'
+
+/**
+ * Azure/GitHub Models may return 400 with this phrase when the prompt is blocked.
+ * @param {number} status
+ * @param {unknown} data
+ * @param {{ agentName?: string } | undefined} options
+ */
+function throwIfContentPolicyBlocked(status, data, options) {
+  if (status !== 400) return
+  let blob = ''
+  if (data && typeof data === 'object') {
+    blob = `${upstreamErrorText(data)} ${JSON.stringify(data)}`
+  } else if (typeof data === 'string') {
+    blob = data
+  }
+  if (!blob.toLowerCase().includes(CONTENT_POLICY_MARK)) return
+  const name =
+    options &&
+    typeof options.agentName === 'string' &&
+    options.agentName.trim()
+      ? options.agentName.trim()
+      : 'the model'
+  throw new Error(
+    `${CONTENT_FILTER_MESSAGE_PREFIX} this prompt was blocked by Azure's safety filter on ${name}. Try rephrasing.`
+  )
+}
+
 /**
  * @param {string} model
  * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
  * @param {string} systemPrompt
- * @param {{ maxTokens?: number } | undefined} [options]
+ * @param {{ maxTokens?: number, agentName?: string } | undefined} [options]
  * @returns {Promise<string>}
  */
 export async function callGitHubModel(model, messages, systemPrompt, options) {
@@ -188,6 +230,13 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
       data = await response.json()
     } catch {
       if (!response.ok) {
+        let textFallback = ''
+        try {
+          textFallback = await response.clone().text()
+        } catch {
+          /* ignore */
+        }
+        throwIfContentPolicyBlocked(response.status, textFallback, options)
         const msg = await errorMessageFromResponse(
           response,
           classifyGitHubModelsStatus(response.status)
@@ -208,6 +257,8 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
       }
       return content
     }
+
+    throwIfContentPolicyBlocked(response.status, data, options)
 
     const detail = upstreamErrorText(data)
     const base = classifyGitHubModelsStatus(response.status)

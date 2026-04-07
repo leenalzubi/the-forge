@@ -8,6 +8,7 @@ import {
   downloadMarkdown,
 } from '../utils/exportUtils.js'
 import TriangleConsensus from './TriangleConsensus.jsx'
+import ValidationBadge from './ValidationBadge.jsx'
 
 /** Prose for synthesis body — essay-like Scriptorium typography (wrapper around ReactMarkdown). */
 const synthesisOutputMarkdownClass =
@@ -177,6 +178,7 @@ export default function SynthesisPanel({ synthesis }) {
             ) : null}
           </div>
         </div>
+        <ValidationBadge />
       </div>
 
       {divergence && (

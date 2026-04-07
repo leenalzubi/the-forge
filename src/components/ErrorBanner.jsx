@@ -3,10 +3,15 @@ import { AlertTriangle } from 'lucide-react'
 /**
  * @param {{ message: string | null, onDismiss: () => void }} props
  */
+const CONTENT_FILTER_BANNER =
+  'One model was blocked by a content filter. Try rephrasing your prompt — avoid ambiguous or sensitive framings.'
+
 export default function ErrorBanner({ message, onDismiss }) {
   if (!message) return null
 
-  const text = typeof message === 'string' ? message : String(message ?? '')
+  const raw = typeof message === 'string' ? message : String(message ?? '')
+  const looksLikeContentFilter = /content filter/i.test(raw)
+  const text = looksLikeContentFilter ? CONTENT_FILTER_BANNER : raw
 
   return (
     <div

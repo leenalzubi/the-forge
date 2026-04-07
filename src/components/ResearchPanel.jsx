@@ -233,40 +233,19 @@ export default function ResearchPanel() {
 
       <SectionDivider />
 
-      <SectionShell num="03" title="How we measure disagreement">
+      <SectionShell num="03" title="Measuring disagreement">
         <div className="space-y-8 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              Semantic divergence
+              Semantic differences
             </h3>
             <p>
               Each agent response is converted into a 1,536-dimension embedding
               vector using OpenAI&apos;s text-embedding-3-small model. These
-              vectors encode meaning, not vocabulary — two responses that say
+              vectors encode vocabulary (not meaning); two responses that say
               the same thing in different words will score low divergence. Two
               responses that reach different conclusions will score high, even
               if they share common phrases.
-            </p>
-            <p className="mt-4">
-              Divergence is calculated as cosine distance between two embedding
-              vectors:
-            </p>
-            <pre
-              className="mt-4 overflow-x-auto text-[13px] leading-relaxed text-[#1C1814]"
-              style={{
-                fontFamily: 'var(--font-mono), ui-monospace, monospace',
-                background: '#F0E8D5',
-                borderLeft: '3px solid #8B1A1A',
-                padding: '12px 16px',
-              }}
-            >
-              {`divergence = 1 - (A · B) / (|A| × |B|)`}
-            </pre>
-            <p className="mt-4">
-              A score of 0 means identical meaning. A score of 1 means completely
-              unrelated. In practice, scores above 0.3 indicate meaningful
-              disagreement. Scores above 0.6 indicate genuinely contested
-              territory.
             </p>
           </div>
 
@@ -275,15 +254,10 @@ export default function ResearchPanel() {
               Pairwise scoring
             </h3>
             <p>
-              Three pairwise scores are computed per debate: A↔B, A↔C, and B↔C.
-              These are visualised as the three edges of the triangle consensus
-              map. The average of all three is the overall divergence score
-              shown in the header.
-            </p>
-            <p className="mt-4">
               This means a debate where two models agree but a third dissents
-              will show two low-divergence edges and one high-divergence edge —
-              visually distinct from a debate where all three diverge equally.
+              will show two low-divergence edges and one high-divergence edge.
+              This is visually distinct from a debate where all three diverge
+              equally.
             </p>
           </div>
 
@@ -292,11 +266,11 @@ export default function ResearchPanel() {
               What the triangle shows
             </h3>
             <p className="mb-6">
-              The triangle is not decorative. Each corner represents a model.
-              Each edge represents how differently those two models reasoned
-              about the same question. A tight triangle means consensus. A
-              stretched triangle means genuine disagreement. A lopsided triangle
-              means two models aligned against a third.
+              Each corner represents a model, and each edge represents how
+              differently those two models reasoned about the same question. A
+              tight triangle means consensus, a stretched triangle means
+              genuine disagreement, and a lopsided triangle means two models
+              aligned against a third.
             </p>
             <TriangleDivergenceIllustration />
           </div>
@@ -371,19 +345,62 @@ export default function ResearchPanel() {
               </li>
               <li className="pt-4">
                 <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  Synthesis draws on all four rounds — weighting unanimous points
+                  Synthesis draws on all four rounds, weighting unanimous points
                   highly, flagging genuine disagreements, and explicitly noting
                   any concessions made.
                 </p>
               </li>
             </ol>
           </div>
+
+          <div>
+            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+              Peer validation
+            </h3>
+            <div
+              className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]"
+              style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+            >
+              <p>
+                The synthesis model is one of the three debaters. Having formed
+                a position in round one, it cannot be a neutral arbiter of the
+                debate it participated in. This is a structural problem with no
+                perfect solution at this scale.
+              </p>
+              <p>
+                My partial solution: after synthesis is generated, the two
+                non-synthesizing agents are asked to score it for fairness.
+                Each validator reads the original prompt, their own round one
+                response, and the synthesis, then scores it out of ten and flags
+                any detected bias or missing positions. If either validator
+                scores below six or flags the synthesis, it is marked as
+                peer-flagged in the audit trail.
+              </p>
+              <p className="my-8 text-[17px] font-semibold leading-[1.75] text-[var(--text-primary)]">
+                This reduces the problem. It does not solve it.
+              </p>
+              <p>
+                It is important to reiterate that validators are also language
+                models with their own positions in the debate. A validator that
+                held firm on a point the synthesis ignored will naturally flag
+                that as missing, which may reflect genuine bias in the synthesis,
+                or may simply reflect the validator&apos;s own stubbornness. The
+                two are indistinguishable from the outside.
+              </p>
+              <p>
+                What peer validation does provide is a signal. A synthesis that
+                receives high scores from both validators is more likely to be
+                balanced than one that does not. Over many debates, the rate of
+                flagged syntheses becomes a meaningful dataset point.
+              </p>
+            </div>
+          </div>
         </div>
       </SectionShell>
 
       <SectionDivider />
 
-      <SectionShell num="04" title="Where this goes">
+      <SectionShell num="04" title="Future directions">
         <div className="grid gap-6 md:grid-cols-2">
           <DirectionCard title="More models, more diversity">
             Adding models from additional labs, like Gemini, Grok, Command R,
@@ -401,9 +418,9 @@ export default function ResearchPanel() {
             studying what good synthesis looks like.
           </DirectionCard>
           <DirectionCard title="Academic partnership">
-            The dataset this tool generates — structured, timestamped,
-            multi-model debates on naturalistic prompts — has potential value
-            for NLP and AI alignment researchers studying model behaviour and
+            The dataset this tool generates (structured, timestamped,
+            multi-model debates on naturalistic prompts) has potential value for
+            NLP and AI alignment researchers studying model behaviour and
             consensus formation.
           </DirectionCard>
         </div>
@@ -428,13 +445,12 @@ export default function ResearchPanel() {
             question may simply mean one model is wrong.
           </p>
           <p>
-            The synthesis model is one of the three debaters. It is not a
-            neutral arbiter. Its synthesis will likely favour its own original
-            position in subtle ways. This is a known limitation with no clean
-            solution at this scale.
+            The synthesis model is one of the three debaters. Its synthesis
+            will likely favour its own original position in subtle ways. This is
+            a known limitation with no clean solution at this scale.
           </p>
           <p>
-            The concession detection is heuristic — it looks for signal words
+            The concession detection is heuristic, as it looks for signal words
             like &apos;I concede&apos; or &apos;valid point&apos;. A model can
             capitulate substantively without using these words, or use them
             rhetorically without genuinely conceding. Treat concession counts as

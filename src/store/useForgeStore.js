@@ -71,6 +71,8 @@ function createInitialState() {
     audit: null,
     auditLoading: false,
     auditError: /** @type {string | null} */ (null),
+    /** Peer validation of synthesis (agents B & C). Null when no run or synthesis skipped. */
+    validation: null,
   }
 }
 
@@ -101,6 +103,7 @@ function forgeReducer(state, action) {
           audit: null,
           auditLoading: false,
           auditError: null,
+          validation: null,
         }
       }
       return { ...state, status: next }
@@ -282,6 +285,23 @@ function forgeReducer(state, action) {
             ? action.payload.heldFirm
             : [],
         },
+      }
+
+    case 'SET_VALIDATION':
+      return {
+        ...state,
+        validation:
+          action.payload &&
+          typeof action.payload === 'object' &&
+          'status' in action.payload
+            ? {
+                b: action.payload.b ?? null,
+                c: action.payload.c ?? null,
+                status: /** @type {'pending' | 'approved' | 'flagged'} */ (
+                  action.payload.status
+                ),
+              }
+            : null,
       }
 
     case 'SET_REBUTTAL_THINKING': {
