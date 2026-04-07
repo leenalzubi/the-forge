@@ -118,7 +118,7 @@ export default function App() {
     () => readWorkflowSidebarCollapsed()
   )
   const [showWelcome, setShowWelcome] = useState(
-    () => typeof window !== 'undefined' && !readWelcomeDismissed()
+    !localStorage.getItem('babel_welcomed')
   )
 
   const running = state.status === 'running'
