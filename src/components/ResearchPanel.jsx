@@ -198,23 +198,28 @@ export default function ResearchPanel() {
             the others, but they then launch into a debate.
           </p>
           <p>
-            In round two, each model reads the other two responses and
-            identifies what it agrees with, challenges, and finds missing. In
-            round three, each model responds directly to the challenges directed
-            at it; this is where concessions happen, positions harden, and
-            genuine disagreement becomes visible. In round four, each model
-            states its final position.
+            In round two, each model reads the other two responses, identifies
+            what it agrees with, challenges what it disagrees with, and defends
+            its own position against anticipated challenges. In round three,
+            each model states its final position having seen everything.
           </p>
           <p>
-            A synthesis pass then reconciles all four rounds into one answer,
-            explicitly noting which points reached consensus, which were
-            conceded, and which remained contested to the end.
+            Synthesis is optional. When enabled, a final pass reconciles all
+            three rounds into one answer, explicitly noting which points reached
+            consensus, which were conceded, and which remained contested to the
+            end.
           </p>
           <p>
             The goal is not to find the best model. It is to use disagreement
             as a research instrument to surface where models converge, where
             they hold firm under challenge, and what the structure of their
             disagreement reveals about how they reason.
+          </p>
+          <p>
+            Each model receives the same neutral system prompt: answer the
+            question honestly and directly. There are no persona instructions
+            and no personality nudges. The differences you see are the models
+            themselves.
           </p>
         </div>
       </SectionShell>
@@ -299,7 +304,7 @@ export default function ResearchPanel() {
               Debate structure
             </h3>
             <p className="mb-5">
-              Each debate runs four rounds:
+              Each debate runs three rounds, with optional synthesis:
             </p>
             <ol className="list-none space-y-0">
               <li className="border-b border-dashed border-[var(--border)] pb-4">
@@ -326,10 +331,11 @@ export default function ResearchPanel() {
                     Round 2
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — cross-review:
+                    — cross-review and rebuttal:
                   </span>{' '}
-                  Each model reads the other two responses and identifies what it
-                  agrees with, challenges, and finds missing.
+                  Each model reads the other two responses, challenges what it
+                  disagrees with, and defends its own position against
+                  anticipated challenges.
                 </p>
               </li>
               <li className="border-b border-dashed border-[var(--border)] py-4">
@@ -341,22 +347,7 @@ export default function ResearchPanel() {
                     Round 3
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — rebuttal:
-                  </span>{' '}
-                  Each model responds directly to the challenges directed at it.
-                  This is where concessions happen.
-                </p>
-              </li>
-              <li className="border-b border-dashed border-[var(--border)] py-4">
-                <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  <span
-                    className="font-mono font-medium text-[#8B1A1A]"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    Round 4
-                  </span>{' '}
-                  <span className="font-bold text-[var(--text-primary)]">
-                    — final position:
+                    — final positions:
                   </span>{' '}
                   Each model states its closing argument having seen the full
                   debate.
@@ -364,9 +355,15 @@ export default function ResearchPanel() {
               </li>
               <li className="pt-4">
                 <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  Synthesis draws on all four rounds, weighting unanimous points
-                  highly, flagging genuine disagreements, and explicitly noting
-                  any concessions made.
+                  <span
+                    className="font-mono font-medium text-[#8B1A1A]"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    Synthesis (optional)
+                  </span>
+                  : When enabled, a final pass reconciles all three positions,
+                  weighting unanimous points highly, flagging genuine
+                  disagreements, and explicitly noting any concessions made.
                 </p>
               </li>
             </ol>

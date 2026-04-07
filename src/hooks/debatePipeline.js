@@ -6,11 +6,19 @@ import {
   SYNTHESIS_VALIDATION_SYSTEM,
 } from '../api/systemPrompts.js'
 import { runAudit } from '../lib/auditDebate.js'
+import {
+  buildDivergenceRowsFromAudit,
+  computeClaimDivergence,
+} from '../lib/claimDivergence.js'
 import { AGENT_TIMEOUT_MESSAGE } from '../lib/debateConstants.js'
+import {
+  aggregateSynthesisWinner,
+  buildCrossReviewEvalUserMessage,
+  CROSS_REVIEW_EVAL_SYSTEM,
+  parseCrossReviewEvalResponse,
+} from '../lib/crossReviewCompetition.js'
 import { isModelCallTimeoutError } from '../lib/modelCallErrors.js'
-import { semanticDivergence } from '../lib/cosineSimilarity.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
-import { getEmbedding } from '../lib/getEmbedding.js'
 import { logDebate } from '../lib/logDebate.js'
 import { parseSynthesisOutput } from '../lib/parseSynthesisOutput.js'
 import {
@@ -24,20 +32,48 @@ import {
 /**
  * @param {import('react').Dispatch<unknown>} dispatch
  * @param {Parameters<typeof runAudit>[0]} snapshot
+ * @param {Record<string, unknown> | null | undefined} logState When set, logDebate runs after audit with claim divergence scores.
  */
-export function scheduleDebateAudit(dispatch, snapshot) {
+export function scheduleDebateAudit(dispatch, snapshot, logState) {
   dispatch({ type: 'SET_AUDIT_LOADING', payload: true })
   dispatch({ type: 'SET_AUDIT_ERROR', payload: null })
   void (async () => {
     try {
       const result = await runAudit(snapshot)
       dispatch({ type: 'SET_AUDIT', payload: result })
+      const positions = buildDivergenceRowsFromAudit(result)
+      const claimScores = computeClaimDivergence(positions)
+      dispatch({
+        type: 'SET_DIVERGENCE',
+        payload: {
+          ...claimScores,
+          mode: logState ? 'append' : 'replaceLast',
+        },
+      })
+      if (logState && typeof logState === 'object') {
+        void logDebate({
+          ...logState,
+          divergenceScores: [claimScores],
+          audit: result,
+        })
+      }
     } catch (err) {
       dispatch({
         type: 'SET_AUDIT_ERROR',
         payload:
           err instanceof Error ? err.message : `Audit failed: ${String(err)}`,
       })
+      if (logState && typeof logState === 'object') {
+        const emptyScores = computeClaimDivergence([])
+        dispatch({
+          type: 'SET_DIVERGENCE',
+          payload: { ...emptyScores, mode: 'append' },
+        })
+        void logDebate({
+          ...logState,
+          divergenceScores: [emptyScores],
+        })
+      }
     } finally {
       dispatch({ type: 'SET_AUDIT_LOADING', payload: false })
       dispatch({ type: 'INCREMENT_PROGRESS_CALLS', payload: 3 })
@@ -163,6 +199,78 @@ async function tryModel(fn) {
 }
 
 /**
+ * Each model evaluates the other two cross-reviews (parallel).
+ * @param {import('react').Dispatch<unknown>} dispatch
+ * @param {{
+ *   agentA: { name: string, model: string },
+ *   agentB: { name: string, model: string },
+ *   agentC: { name: string, model: string },
+ * }} config
+ */
+async function runCrossReviewPeerEvaluations(
+  dispatch,
+  config,
+  aRev,
+  bRev,
+  cRev
+) {
+  const specs = [
+    {
+      key: /** @type {const} */ ('gpt'),
+      model: config.agentA.model,
+      name: config.agentA.name,
+    },
+    {
+      key: /** @type {const} */ ('phi'),
+      model: config.agentB.model,
+      name: config.agentB.name,
+    },
+    {
+      key: /** @type {const} */ ('mistral'),
+      model: config.agentC.model,
+      name: config.agentC.name,
+    },
+  ]
+  const results = await Promise.all(
+    specs.map(async ({ key, model, name }) => {
+      const user = clipInferenceText(
+        buildCrossReviewEvalUserMessage(key, config, aRev, bRev, cRev),
+        56_000
+      )
+      const r = await tryModel(() =>
+        callGitHubModel(
+          model,
+          [{ role: 'user', content: user }],
+          CROSS_REVIEW_EVAL_SYSTEM,
+          {
+            agentName: name,
+            maxTokens: 2048,
+            errorContext: { stage: 'cross-review-eval', round: 2 },
+          }
+        )
+      )
+      if (!r.ok) {
+        bumpTimeout(dispatch)
+        return { key, scores: [] }
+      }
+      const { scores } = parseCrossReviewEvalResponse(
+        'value' in r ? r.value : ''
+      )
+      bump(dispatch)
+      return { key, scores }
+    })
+  )
+  const evaluations = {
+    gpt: { scores: results.find((x) => x.key === 'gpt')?.scores ?? [] },
+    phi: { scores: results.find((x) => x.key === 'phi')?.scores ?? [] },
+    mistral: {
+      scores: results.find((x) => x.key === 'mistral')?.scores ?? [],
+    },
+  }
+  return aggregateSynthesisWinner(evaluations)
+}
+
+/**
  * Finals → synthesis/validation → audit.
  * @param {object} ctx
  * @param {boolean} [ctx.skipFinalModelCalls] When true, use `precomputedFinals` (resume).
@@ -171,7 +279,6 @@ async function tryModel(fn) {
 export async function runPipelineFromFinalsOnward(ctx) {
   const {
     dispatch,
-    uiSettings,
     userPrompt,
     config,
     ra,
@@ -183,16 +290,10 @@ export async function runPipelineFromFinalsOnward(ctx) {
     rebA = '',
     rebB = '',
     rebC = '',
-    embA,
-    embB,
-    embC,
-    ab,
-    ac,
-    bc,
-    average,
     skipFinalModelCalls,
     precomputedFinals,
     synthesisEnabled = false,
+    synthesisWinner = null,
   } = ctx
 
   let fa
@@ -338,78 +439,34 @@ export async function runPipelineFromFinalsOnward(ctx) {
 
   await pause(2000)
 
-  const debateBase = {
+  /** @type {Record<string, unknown>} */
+  const logBase = {
     prompt: userPrompt.trim(),
     rounds: [{ roundNum: 1, agentA: ra, agentB: rb, agentC: rc }],
     reviews: [{ aReviews: aRev, bReviews: bRev, cReviews: cRev }],
     rebuttals: { a: rebA, b: rebB, c: rebC },
     finalPositions: { a: fa, b: fb, c: fc },
-    divergenceScores: [{ ab, ac, bc, average }],
     config,
-    embedding_a: embA,
-    embedding_b: embB,
-    embedding_c: embC,
+    synthesisWinner: synthesisWinner ?? null,
   }
 
   if (!synthesisEnabled) {
     dispatch({ type: 'SET_STATUS', payload: 'complete' })
-    void logDebate({
-      ...debateBase,
-      synthesis: null,
-      validation: null,
-    })
-    scheduleDebateAudit(dispatch, {
-      config,
-      prompt: userPrompt.trim(),
-      round1: { agentA: ra, agentB: rb, agentC: rc },
-      reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-      synthesis: {
-        output: clipInferenceText(auditSynthesisFallback(fa, fb, fc), 48_000),
+    scheduleDebateAudit(
+      dispatch,
+      {
+        config,
+        prompt: userPrompt.trim(),
+        round1: { agentA: ra, agentB: rb, agentC: rc },
+        reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+        rebuttals: { a: rebA, b: rebB, c: rebC },
+        finalPositions: { agentA: fa, agentB: fb, agentC: fc },
+        synthesis: {
+          output: clipInferenceText(auditSynthesisFallback(fa, fb, fc), 48_000),
+        },
       },
-    })
-    return
-  }
-
-  const shouldSynthesize =
-    uiSettings.synthesisMode === 'always' || average > 0.4
-
-  if (!shouldSynthesize) {
-    dispatch({
-      type: 'SET_SYNTHESIS',
-      payload: {
-        output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
-        attributions: { a: '', b: '', c: '' },
-        rationale: '',
-        concessions: [],
-        heldFirm: [],
-      },
-    })
-    dispatch({
-      type: 'SET_LAST_COMPLETED_STAGE',
-      payload: { stage: 'synthesis' },
-    })
-    dispatch({ type: 'SET_STATUS', payload: 'complete' })
-    void logDebate({
-      ...debateBase,
-      synthesis: {
-        output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
-        attributions: { a: '', b: '', c: '' },
-        concessions: [],
-        heldFirm: [],
-      },
-    })
-    scheduleDebateAudit(dispatch, {
-      config,
-      prompt: userPrompt.trim(),
-      round1: { agentA: ra, agentB: rb, agentC: rc },
-      reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-      synthesis: {
-        output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
-      },
-    })
+      { ...logBase, synthesis: null, validation: null }
+    )
     return
   }
 
@@ -432,13 +489,25 @@ export async function runPipelineFromFinalsOnward(ctx) {
   await pause(700)
   let synthesisRaw = ''
   {
+    const w =
+      synthesisWinner &&
+      typeof synthesisWinner === 'object' &&
+      synthesisWinner.winner
+        ? String(synthesisWinner.winner).toLowerCase()
+        : 'gpt'
+    const synthAgent =
+      w === 'phi'
+        ? config.agentB
+        : w === 'mistral'
+          ? config.agentC
+          : config.agentA
     const r = await tryModel(() =>
       callGitHubModel(
-        config.agentA.model,
+        synthAgent.model,
         [{ role: 'user', content: synthesisUser }],
         SYNTHESIS_SYSTEM,
         {
-          agentName: config.agentA.name,
+          agentName: synthAgent.name,
           errorContext: { stage: 'synthesis', round: 3 },
         }
       )
@@ -541,29 +610,33 @@ export async function runPipelineFromFinalsOnward(ctx) {
   })
 
   dispatch({ type: 'SET_STATUS', payload: 'complete' })
-  void logDebate({
-    ...debateBase,
-    synthesis: {
-      output: parsed.output,
-      attributions: parsed.attributions,
-      rationale: parsed.rationale,
-      concessions: parsed.concessions,
-      heldFirm: parsed.heldFirm,
+  scheduleDebateAudit(
+    dispatch,
+    {
+      config,
+      prompt: userPrompt.trim(),
+      round1: { agentA: ra, agentB: rb, agentC: rc },
+      reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+      rebuttals: { a: rebA, b: rebB, c: rebC },
+      finalPositions: { agentA: fa, agentB: fb, agentC: fc },
+      synthesis: { output: parsed.output },
     },
-    validation: {
-      b: normB,
-      c: normC,
-      status: validationStatus,
-    },
-  })
-  scheduleDebateAudit(dispatch, {
-    config,
-    prompt: userPrompt.trim(),
-    round1: { agentA: ra, agentB: rb, agentC: rc },
-    reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-    synthesis: { output: parsed.output },
-  })
-
+    {
+      ...logBase,
+      synthesis: {
+        output: parsed.output,
+        attributions: parsed.attributions,
+        rationale: parsed.rationale,
+        concessions: parsed.concessions,
+        heldFirm: parsed.heldFirm,
+      },
+      validation: {
+        b: normB,
+        c: normC,
+        status: validationStatus,
+      },
+    }
+  )
 }
 
 /**
@@ -592,34 +665,6 @@ export async function runPipelineAfterRound1(ctx) {
     rc,
     synthesisEnabled = false,
   } = ctx
-
-  const [embA, embB, embC] = await Promise.all([
-    getEmbedding(ra),
-    getEmbedding(rb),
-    getEmbedding(rc),
-  ])
-
-  const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
-  const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
-  const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
-
-  const divList = [div_ab, div_ac, div_bc].filter(
-    (v) => v != null && typeof v === 'number'
-  )
-  const average =
-    divList.length > 0
-      ? Math.round(
-          (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
-        ) / 10000
-      : 0
-  const ab = div_ab ?? 0
-  const ac = div_ac ?? 0
-  const bc = div_bc ?? 0
-
-  dispatch({
-    type: 'SET_DIVERGENCE',
-    payload: { ab, ac, bc, average },
-  })
 
   const aReviewMsg = clipInferenceText(
     buildRound2CombinedUserMessage(
@@ -749,6 +794,15 @@ export async function runPipelineAfterRound1(ctx) {
     payload: { stage: 'reviews' },
   })
 
+  const competition = await runCrossReviewPeerEvaluations(
+    dispatch,
+    config,
+    aRev,
+    bRev,
+    cRev
+  )
+  dispatch({ type: 'SET_SYNTHESIS_WINNER', payload: competition })
+
   await pause(2000)
 
   await runPipelineFromFinalsOnward({
@@ -765,14 +819,8 @@ export async function runPipelineAfterRound1(ctx) {
     rebA: '',
     rebB: '',
     rebC: '',
-    embA,
-    embB,
-    embC,
-    ab,
-    ac,
-    bc,
-    average,
     synthesisEnabled,
+    synthesisWinner: competition,
   })
 }
 
@@ -804,6 +852,7 @@ export async function resumeFromRound1(ctx) {
  *   aRev: string,
  *   bRev: string,
  *   cRev: string,
+ *   existingSynthesisWinner?: unknown,
  * }} ctx
  */
 export async function resumeFromReviews(ctx) {
@@ -819,36 +868,29 @@ export async function resumeFromReviews(ctx) {
     bRev,
     cRev,
     synthesisEnabled = false,
+    existingSynthesisWinner = null,
   } = ctx
 
-  const [embA, embB, embC] = await Promise.all([
-    getEmbedding(ra),
-    getEmbedding(rb),
-    getEmbedding(rc),
-  ])
-
-  const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
-  const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
-  const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
-  const divList = [div_ab, div_ac, div_bc].filter(
-    (v) => v != null && typeof v === 'number'
-  )
-  const average =
-    divList.length > 0
-      ? Math.round(
-          (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
-        ) / 10000
-      : 0
-  const ab = div_ab ?? 0
-  const ac = div_ac ?? 0
-  const bc = div_bc ?? 0
-
-  dispatch({
-    type: 'SET_DIVERGENCE',
-    payload: { ab, ac, bc, average },
-  })
-
   await pause(2000)
+
+  let synthesisWinner = existingSynthesisWinner
+  if (
+    !synthesisWinner ||
+    typeof synthesisWinner !== 'object' ||
+    !synthesisWinner.winner
+  ) {
+    synthesisWinner = await runCrossReviewPeerEvaluations(
+      dispatch,
+      config,
+      aRev,
+      bRev,
+      cRev
+    )
+    dispatch({
+      type: 'SET_SYNTHESIS_WINNER',
+      payload: synthesisWinner,
+    })
+  }
 
   await runPipelineFromFinalsOnward({
     dispatch,
@@ -864,13 +906,7 @@ export async function resumeFromReviews(ctx) {
     rebA: '',
     rebB: '',
     rebC: '',
-    embA,
-    embB,
-    embC,
-    ab,
-    ac,
-    bc,
-    average,
     synthesisEnabled,
+    synthesisWinner,
   })
 }

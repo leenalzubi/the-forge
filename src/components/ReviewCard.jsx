@@ -56,7 +56,7 @@ function CrossReviewAgentCard({
           <AgentTimer startTime={startTime} endTime={endTime ?? null} />
         ) : null}
       </div>
-      <div className="border-t border-dashed border-[var(--border)] px-4 pb-4 pt-3">
+      <div className="forge-response-scroll border-t border-dashed border-[var(--border)] px-4 pb-4 pt-3">
         <AgentResponseBody rawText={body} markdownClassName={mdClass} />
       </div>
     </article>

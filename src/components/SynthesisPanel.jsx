@@ -139,6 +139,23 @@ export default function SynthesisPanel({ synthesis }) {
               Four rounds of dialogue — independent answers, cross-reviews, rebuttals,
               and closing positions — then one synthesis from the full transcript.
             </p>
+            {state.synthesisWinner &&
+            typeof state.synthesisWinner === 'object' &&
+            state.synthesisWinner.winner ? (
+              <p className="mt-2 max-w-2xl font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text-muted)]">
+                Synthesized by{' '}
+                <span className="text-[var(--text-secondary)]">
+                  {state.synthesisWinner.winner === 'phi'
+                    ? agentB.name
+                    : state.synthesisWinner.winner === 'mistral'
+                      ? agentC.name
+                      : agentA.name}
+                </span>
+                <span className="mt-0.5 block text-[10px] italic">
+                  — earned through highest peer evaluation score
+                </span>
+              </p>
+            ) : null}
             {howWorksOpen ? (
               <div
                 id="synthesis-how-works"
@@ -183,13 +200,6 @@ export default function SynthesisPanel({ synthesis }) {
 
       {divergence && (
         <div className="border-t border-dashed border-[var(--border)] bg-[var(--bg-synthesis)] px-6 py-6 md:px-10">
-          <p className="mb-2 text-center font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Overall divergence
-          </p>
-          <p className="mx-auto mb-4 max-w-md text-center font-sans text-[11px] leading-relaxed italic text-[var(--text-muted)]">
-            Semantic scores — measures meaning similarity between model answers,
-            not shared vocabulary.
-          </p>
           <div className="flex justify-center">
             <TriangleConsensus scores={divergence} initials={triInitials} />
           </div>

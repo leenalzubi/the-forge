@@ -26,6 +26,41 @@ function fmtPct(val) {
   return p === null ? '—' : `${p}%`
 }
 
+/** Prefer claim-based average; fall back to legacy semantic `divergence_avg`. */
+function rowClaimAvg(r) {
+  const c = r.claim_divergence_avg
+  if (c != null && c !== '' && !Number.isNaN(Number(c))) return Number(c)
+  const d = r.divergence_avg
+  if (d != null && d !== '' && !Number.isNaN(Number(d))) return Number(d)
+  return null
+}
+
+/** @param {Record<string, unknown>} r */
+function rowClaimScores(r) {
+  /** @param {string} ck @param {string} dk */
+  const pick = (ck, dk) => {
+    const c = r[ck]
+    if (c != null && c !== '' && !Number.isNaN(Number(c))) return Number(c)
+    const d = r[dk]
+    if (d != null && d !== '' && !Number.isNaN(Number(d))) return Number(d)
+    return null
+  }
+  return {
+    ab: pick('claim_divergence_ab', 'divergence_ab'),
+    ac: pick('claim_divergence_ac', 'divergence_ac'),
+    bc: pick('claim_divergence_bc', 'divergence_bc'),
+    average: rowClaimAvg(r),
+    unanimousClaims:
+      r.unanimous_claims != null && r.unanimous_claims !== ''
+        ? Number(r.unanimous_claims)
+        : 0,
+    contestedClaims:
+      r.contested_claims != null && r.contested_claims !== ''
+        ? Number(r.contested_claims)
+        : 0,
+  }
+}
+
 /**
  * @param {string | null | undefined} c
  * @param {{ model_a?: string, model_b?: string, model_c?: string }} row
@@ -134,10 +169,18 @@ export default function FindingsPanel() {
             'model_a',
             'model_b',
             'model_c',
+            'claim_divergence_ab',
+            'claim_divergence_ac',
+            'claim_divergence_bc',
+            'claim_divergence_avg',
             'divergence_ab',
             'divergence_ac',
             'divergence_bc',
             'divergence_avg',
+            'total_claims',
+            'contested_claims',
+            'unanimous_claims',
+            'hard_disagreements',
             'rounds',
             'top_contributor',
             'conflict_score_ab',
@@ -155,6 +198,10 @@ export default function FindingsPanel() {
             'most_combative',
             'bias_flagged',
             'validation_status',
+            'synthesis_winner',
+            'gpt_competition_score',
+            'phi_competition_score',
+            'mistral_competition_score',
           ].join(',')
         )
         .order('created_at', { ascending: false })
@@ -175,14 +222,13 @@ export default function FindingsPanel() {
   }, [])
 
   const stats = useMemo(() => {
-    const valid = rows.filter(
-      (r) => r.divergence_avg != null && !Number.isNaN(Number(r.divergence_avg))
-    )
+    const valid = rows.filter((r) => rowClaimAvg(r) != null)
     const total = rows.length
     const avgDiv =
       valid.length === 0
         ? null
-        : valid.reduce((s, r) => s + Number(r.divergence_avg), 0) / valid.length
+        : valid.reduce((s, r) => s + /** @type {number} */ (rowClaimAvg(r)), 0) /
+          valid.length
 
     /** @param {string} col */
     function tallyAgentSlot(col) {
@@ -354,6 +400,45 @@ export default function FindingsPanel() {
               100
           )
 
+    const swTally = { gpt: 0, phi: 0, mistral: 0 }
+    let synthesisWinDenom = 0
+    for (const r of rows) {
+      const w = String(r.synthesis_winner ?? '').toLowerCase()
+      if (w !== 'gpt' && w !== 'phi' && w !== 'mistral') continue
+      synthesisWinDenom += 1
+      swTally[w] += 1
+    }
+    let synthesisWinLeaderSlot = /** @type {'gpt' | 'phi' | 'mistral' | null} */ (
+      null
+    )
+    let synthesisWinCount = 0
+    for (const slot of /** @type {const} */ (['gpt', 'phi', 'mistral'])) {
+      const c = swTally[slot]
+      if (c > synthesisWinCount) {
+        synthesisWinCount = c
+        synthesisWinLeaderSlot = slot
+      }
+    }
+    const sampleWinRow =
+      synthesisWinLeaderSlot == null
+        ? null
+        : rows.find(
+            (r) =>
+              String(r.synthesis_winner ?? '').toLowerCase() ===
+              synthesisWinLeaderSlot
+          )
+    const synthesisWinLeaderName =
+      sampleWinRow == null || synthesisWinLeaderSlot == null
+        ? null
+        : slotModel(
+            sampleWinRow,
+            synthesisWinLeaderSlot === 'gpt'
+              ? 'a'
+              : synthesisWinLeaderSlot === 'phi'
+                ? 'b'
+                : 'c'
+          )
+
     return {
       n,
       combativeRow,
@@ -366,12 +451,16 @@ export default function FindingsPanel() {
       namedPct,
       personality,
       synthesisBiasRate,
+      synthesisWinLeaderName,
+      synthesisWinCount,
+      synthesisWinDenom,
     }
   }, [rows])
 
   const filteredSorted = useMemo(() => {
     let list = rows.filter((r) => {
-      const p = pct(r.divergence_avg)
+      const av = rowClaimAvg(r)
+      const p = pct(av)
       if (p === null) return false
       if (p < divMin || p > divMax) return false
       return true
@@ -387,12 +476,12 @@ export default function FindingsPanel() {
     } else if (sort === 'contested') {
       sorted.sort(
         (a, b) =>
-          Number(b.divergence_avg ?? -1) - Number(a.divergence_avg ?? -1)
+          Number(rowClaimAvg(b) ?? -1) - Number(rowClaimAvg(a) ?? -1)
       )
     } else {
       sorted.sort(
         (a, b) =>
-          Number(a.divergence_avg ?? 2) - Number(b.divergence_avg ?? 2)
+          Number(rowClaimAvg(a) ?? 2) - Number(rowClaimAvg(b) ?? 2)
       )
     }
     return sorted
@@ -441,11 +530,11 @@ export default function FindingsPanel() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total debates" value={stats.total} />
         <StatCard
-          title="Average divergence"
+          title="Avg. claim disagreement"
           value={
             stats.avgDiv == null ? '—' : `${pct(stats.avgDiv)}%`
           }
-          subtitle="higher = models reasoned more differently"
+          subtitle="mean pairwise claim tension across debates"
         />
         <StatCard
           title="Most flexible agent"
@@ -474,8 +563,8 @@ export default function FindingsPanel() {
       </div>
 
       <p className="rounded-forge-card border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-center font-sans text-xs italic leading-relaxed text-[var(--text-muted)]">
-        Divergence scores reflect semantic distance between model responses —
-        how differently they reasoned, not just how differently they phrased it.
+        Claim disagreement is derived from audited claims: how often agents agreed,
+        disagreed, or split on each extracted claim — not embedding similarity.
       </p>
 
       {supabaseConfigured ? (
@@ -489,7 +578,7 @@ export default function FindingsPanel() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <StatCard
                   title="Most combative round"
                   value={
@@ -534,6 +623,17 @@ export default function FindingsPanel() {
                       : `${agentDynamics.synthesisBiasRate}%`
                   }
                   subtitle="Debates where validators flagged the synthesis as unfair to one or more positions"
+                />
+                <StatCard
+                  title="Synthesis wins"
+                  value={
+                    agentDynamics.synthesisWinDenom === 0
+                      ? '—'
+                      : agentDynamics.synthesisWinLeaderName == null
+                        ? '—'
+                        : `${agentDynamics.synthesisWinLeaderName} (${agentDynamics.synthesisWinCount} of ${agentDynamics.synthesisWinDenom})`
+                  }
+                  subtitle="based on peer evaluation scores"
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
@@ -715,12 +815,7 @@ export default function FindingsPanel() {
                     row.id != null
                       ? String(row.id)
                       : `row-${safePage}-${rowIdx}`
-                  const scores = {
-                    ab: Number(row.divergence_ab),
-                    ac: Number(row.divergence_ac),
-                    bc: Number(row.divergence_bc),
-                    average: Number(row.divergence_avg),
-                  }
+                  const scores = rowClaimScores(row)
                   const iso =
                     typeof row.created_at === 'string'
                       ? row.created_at
@@ -749,24 +844,24 @@ export default function FindingsPanel() {
                           {dateStr}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(row.divergence_avg)}`}
+                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(rowClaimAvg(row))}`}
                         >
-                          {fmtPct(row.divergence_avg)}
+                          {fmtPct(rowClaimAvg(row))}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(row.divergence_ab)}`}
+                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.ab)}`}
                         >
-                          {fmtPct(row.divergence_ab)}
+                          {fmtPct(scores.ab)}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(row.divergence_ac)}`}
+                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.ac)}`}
                         >
-                          {fmtPct(row.divergence_ac)}
+                          {fmtPct(scores.ac)}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(row.divergence_bc)}`}
+                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.bc)}`}
                         >
-                          {fmtPct(row.divergence_bc)}
+                          {fmtPct(scores.bc)}
                         </td>
                         <td
                           className="max-w-[120px] truncate px-3 py-2 font-mono text-xs text-[var(--text-secondary)]"
@@ -790,11 +885,11 @@ export default function FindingsPanel() {
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
                           <td colSpan={7} className="px-6 py-6">
                             <p className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-                              Pairwise divergence
+                              Pairwise claim disagreement
                             </p>
                             <p className="mb-3 max-w-md font-sans text-[11px] italic leading-relaxed text-[var(--text-muted)]">
-                              Semantic scores measure meaning similarity, not
-                              vocabulary overlap.
+                              Edges aggregate agree / disagree / partial / silent
+                              labels from the debate audit.
                             </p>
                             <div className="flex justify-center md:justify-start">
                               <TriangleConsensus
@@ -843,7 +938,7 @@ export default function FindingsPanel() {
 
       {!loading && supabaseConfigured ? (
         <p className="font-mono text-[10px] text-[var(--text-muted)]">
-          Showing debates with average semantic divergence between {divMin}% and{' '}
+          Showing debates with average claim disagreement between {divMin}% and{' '}
           {divMax}%. Rows without a stored average are hidden while filtering.
         </p>
       ) : null}

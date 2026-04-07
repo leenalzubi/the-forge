@@ -29,3 +29,24 @@
   --card-radius: 6px;
   --card-shadow: none;
 }
+
+/* Scrollable debate response bodies (R1 / R2 / R3) */
+.forge-response-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d4c9b0 transparent;
+}
+
+.forge-response-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.forge-response-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.forge-response-scroll::-webkit-scrollbar-thumb {
+  background: #d4c9b0;
+  border-radius: 2px;
+}

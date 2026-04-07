@@ -447,10 +447,10 @@ export default function WorkflowTimeline({
             {showBar && (
               <div className="pr-1 pt-1">
                 <p className="font-mono text-[9px] text-[var(--text-muted)]">
-                  Semantic divergence (avg.)
+                  Claim disagreement (avg.)
                 </p>
                 <p className="mt-0.5 font-mono text-[8px] leading-snug text-[var(--text-muted)]/90">
-                  Meaning distance, not wording
+                  From audited claim positions
                 </p>
                 <DivergenceBar pct={pct} />
               </div>

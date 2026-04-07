@@ -14,7 +14,7 @@ function DivergenceChip({ label, color, pct }) {
   return (
     <span
       className="inline-flex flex-col items-center gap-0.5 rounded-[4px] border border-dashed border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]"
-      title="Semantic divergence: meaning similarity, not vocabulary overlap."
+      title="Claim disagreement from audited positions (pairwise)."
     >
       <span className="inline-flex items-center gap-1.5">
         <span
@@ -26,7 +26,7 @@ function DivergenceChip({ label, color, pct }) {
         <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
       </span>
       <span className="text-[8px] font-normal tracking-wide text-[var(--text-muted)]">
-        Semantic
+        Claims
       </span>
     </span>
   )
@@ -54,7 +54,7 @@ function RoundAgentPanel({ title, color, text, startTime, endTime }) {
           <AgentTimer startTime={startTime} endTime={endTime} />
         ) : null}
       </div>
-      <div className="max-h-[360px] overflow-y-auto px-4 pb-4 pt-1">
+      <div className="forge-response-scroll px-4 pb-4 pt-1">
         <AgentResponseBody rawText={text} markdownClassName={replyMd} />
       </div>
     </div>

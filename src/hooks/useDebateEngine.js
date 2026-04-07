@@ -1,10 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { callGitHubModel } from '../api/githubModelsClient.js'
-import {
-  AGENT_A_ROUND1_SYSTEM,
-  AGENT_B_ROUND1_SYSTEM,
-  AGENT_C_ROUND1_SYSTEM,
-} from '../api/systemPrompts.js'
+import { AGENT_ROUND1_SYSTEM } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
 import {
   AGENT_TIMEOUT_MESSAGE,
@@ -15,8 +11,6 @@ import {
   normalizeDebateFailure,
 } from '../lib/modelCallErrors.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
-import { semanticDivergence } from '../lib/cosineSimilarity.js'
-import { getEmbedding } from '../lib/getEmbedding.js'
 import { readBabelSynthesisEnabled } from '../lib/babelSynthesisPref.js'
 import { logDebate } from '../lib/logDebate.js'
 import { useForge } from '../store/useForgeStore.js'
@@ -95,7 +89,7 @@ export function useDebateEngine() {
             callGitHubModel(
               config.agentA.model,
               [{ role: 'user', content: promptClipped }],
-              AGENT_A_ROUND1_SYSTEM,
+              AGENT_ROUND1_SYSTEM,
               {
                 agentName: config.agentA.name,
                 errorContext: { stage: 'round1', round: 1 },
@@ -129,7 +123,7 @@ export function useDebateEngine() {
             callGitHubModel(
               config.agentB.model,
               [{ role: 'user', content: promptClipped }],
-              AGENT_B_ROUND1_SYSTEM,
+              AGENT_ROUND1_SYSTEM,
               {
                 agentName: config.agentB.name,
                 errorContext: { stage: 'round1', round: 1 },
@@ -163,7 +157,7 @@ export function useDebateEngine() {
             callGitHubModel(
               config.agentC.model,
               [{ role: 'user', content: promptClipped }],
-              AGENT_C_ROUND1_SYSTEM,
+              AGENT_ROUND1_SYSTEM,
               {
                 agentName: config.agentC.name,
                 errorContext: { stage: 'round1', round: 1 },
@@ -228,6 +222,7 @@ export function useDebateEngine() {
             synthesis: snap.synthesis,
             validation: snap.validation,
             config: snap.config,
+            synthesisWinner: snap.synthesisWinner,
             is_partial: true,
             last_completed_stage: lastStage,
             timeout_count: snap.timeoutCount,
@@ -293,34 +288,11 @@ export function useDebateEngine() {
             bRev,
             cRev,
             synthesisEnabled,
+            existingSynthesisWinner: snap.synthesisWinner,
           })
           return
         }
         if (fromStage === 'rebuttals') {
-          const [embA, embB, embC] = await Promise.all([
-            getEmbedding(ra),
-            getEmbedding(rb),
-            getEmbedding(rc),
-          ])
-          const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
-          const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
-          const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
-          const divList = [div_ab, div_ac, div_bc].filter(
-            (v) => v != null && typeof v === 'number'
-          )
-          const average =
-            divList.length > 0
-              ? Math.round(
-                  (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
-                ) / 10000
-              : 0
-          const ab = div_ab ?? 0
-          const ac = div_ac ?? 0
-          const bc = div_bc ?? 0
-          dispatch({
-            type: 'SET_DIVERGENCE',
-            payload: { ab, ac, bc, average },
-          })
           await pause(2000)
           await runPipelineFromFinalsOnward({
             dispatch,
@@ -336,42 +308,13 @@ export function useDebateEngine() {
             rebA,
             rebB,
             rebC,
-            embA,
-            embB,
-            embC,
-            ab,
-            ac,
-            bc,
-            average,
             synthesisEnabled,
+            synthesisWinner: snap.synthesisWinner,
           })
           return
         }
         if (fromStage === 'finalPositions') {
-          const [embA, embB, embC] = await Promise.all([
-            getEmbedding(ra),
-            getEmbedding(rb),
-            getEmbedding(rc),
-          ])
-          const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
-          const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
-          const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
-          const divList = [div_ab, div_ac, div_bc].filter(
-            (v) => v != null && typeof v === 'number'
-          )
-          const average =
-            divList.length > 0
-              ? Math.round(
-                  (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
-                ) / 10000
-              : 0
-          const ab = div_ab ?? 0
-          const ac = div_ac ?? 0
-          const bc = div_bc ?? 0
-          dispatch({
-            type: 'SET_DIVERGENCE',
-            payload: { ab, ac, bc, average },
-          })
+          await pause(2000)
           await runPipelineFromFinalsOnward({
             dispatch,
             uiSettings,
@@ -386,16 +329,10 @@ export function useDebateEngine() {
             rebA,
             rebB,
             rebC,
-            embA,
-            embB,
-            embC,
-            ab,
-            ac,
-            bc,
-            average,
             skipFinalModelCalls: true,
             precomputedFinals: { a: fa, b: fb, c: fc },
             synthesisEnabled,
+            synthesisWinner: snap.synthesisWinner,
           })
           return
         }
@@ -406,13 +343,19 @@ export function useDebateEngine() {
           if (!out) {
             throw new Error('No synthesis output to resume from.')
           }
-          scheduleDebateAudit(dispatch, {
-            config,
-            prompt: userPrompt.trim(),
-            round1: { agentA: ra, agentB: rb, agentC: rc },
-            reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-            synthesis: { output: out },
-          })
+          scheduleDebateAudit(
+            dispatch,
+            {
+              config,
+              prompt: userPrompt.trim(),
+              round1: { agentA: ra, agentB: rb, agentC: rc },
+              reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+              rebuttals: { a: rebA, b: rebB, c: rebC },
+              finalPositions: { agentA: fa, agentB: fb, agentC: fc },
+              synthesis: { output: out },
+            },
+            null
+          )
           dispatch({ type: 'SET_STATUS', payload: 'complete' })
         }
       } catch (e) {

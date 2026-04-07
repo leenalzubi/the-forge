@@ -26,12 +26,25 @@ export default function WelcomeModal({ onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="welcome-modal-title"
-        className="w-full max-w-[420px] rounded-[8px] shadow-lg"
+        className="relative w-full max-w-[420px] rounded-[8px] shadow-lg"
         style={{
           backgroundColor: '#FDFAF4',
           padding: '48px',
         }}
       >
+        <button
+          type="button"
+          onClick={handleStart}
+          aria-label="Close welcome dialog"
+          className="absolute cursor-pointer border-none bg-transparent p-0 text-[20px] leading-none text-[#6B5E4E] transition-colors hover:text-[#1C1814] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1A1A]/40 focus-visible:ring-offset-2"
+          style={{
+            top: 16,
+            right: 16,
+            padding: '4px 8px',
+          }}
+        >
+          ×
+        </button>
         <div className="flex flex-col items-center text-center">
           <h1
             id="welcome-modal-title"

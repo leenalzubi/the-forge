@@ -1,3 +1,4 @@
+import { computeAuditPositionMetrics } from './auditJourney.js'
 import { analyseDebate } from './analyseDebate.js'
 import { supabase } from './supabaseClient.js'
 
@@ -20,11 +21,30 @@ export async function logDebate(state) {
     const div = Array.isArray(state.divergenceScores)
       ? state.divergenceScores[0]
       : null
-    const divergence_ab = div && typeof div.ab === 'number' ? div.ab : null
-    const divergence_ac = div && typeof div.ac === 'number' ? div.ac : null
-    const divergence_bc = div && typeof div.bc === 'number' ? div.bc : null
-    const divergence_avg =
+    const claim_divergence_ab =
+      div && typeof div.ab === 'number' ? div.ab : null
+    const claim_divergence_ac =
+      div && typeof div.ac === 'number' ? div.ac : null
+    const claim_divergence_bc =
+      div && typeof div.bc === 'number' ? div.bc : null
+    const claim_divergence_avg =
       div && typeof div.average === 'number' ? div.average : null
+    const total_claims =
+      div && typeof div.totalClaims === 'number'
+        ? Math.max(0, Math.round(div.totalClaims))
+        : null
+    const contested_claims =
+      div && typeof div.contestedClaims === 'number'
+        ? Math.max(0, Math.round(div.contestedClaims))
+        : null
+    const unanimous_claims =
+      div && typeof div.unanimousClaims === 'number'
+        ? Math.max(0, Math.round(div.unanimousClaims))
+        : null
+    const hard_disagreements =
+      div && typeof div.hardDisagreements === 'number'
+        ? Math.max(0, Math.round(div.hardDisagreements))
+        : null
 
     const synth = state.synthesis
 
@@ -76,19 +96,15 @@ export async function logDebate(state) {
     const model_b = typeof agentB.model === 'string' ? agentB.model : null
     const model_c = typeof agentC.model === 'string' ? agentC.model : null
 
-    /** @param {unknown} emb */
-    function vecForInsert(emb) {
-      return Array.isArray(emb) &&
-        emb.length > 0 &&
-        emb.every((x) => typeof x === 'number')
-        ? emb
-        : null
-    }
-    const embedding_a = vecForInsert(state.embedding_a)
-    const embedding_b = vecForInsert(state.embedding_b)
-    const embedding_c = vecForInsert(state.embedding_c)
-
     const analysis = analyseDebate(state)
+    const audit = state.audit && typeof state.audit === 'object' ? state.audit : null
+    const apm = computeAuditPositionMetrics(audit)
+    const sw =
+      state.synthesisWinner && typeof state.synthesisWinner === 'object'
+        ? state.synthesisWinner
+        : null
+    const sc =
+      sw && typeof sw.scores === 'object' ? sw.scores : null
 
     const val = state.validation
     const validation_score_b =
@@ -124,10 +140,14 @@ export async function logDebate(state) {
       timeout_count: timeoutCount,
       prompt_length,
       prompt_preview,
-      divergence_ab,
-      divergence_ac,
-      divergence_bc,
-      divergence_avg,
+      claim_divergence_ab,
+      claim_divergence_ac,
+      claim_divergence_bc,
+      claim_divergence_avg,
+      total_claims,
+      contested_claims,
+      unanimous_claims,
+      hard_disagreements,
       final_position_a,
       final_position_b,
       final_position_c,
@@ -137,14 +157,22 @@ export async function logDebate(state) {
       model_a,
       model_b,
       model_c,
-      embedding_a,
-      embedding_b,
-      embedding_c,
       validation_score_b,
       validation_score_c,
       validation_status,
       bias_flagged,
       ...analysis,
+      positions_shifted: apm?.positions_shifted ?? null,
+      positions_flipped: apm?.positions_flipped ?? null,
+      most_changed_model: apm?.most_changed_model ?? null,
+      synthesis_winner:
+        typeof sw?.winner === 'string' ? sw.winner : null,
+      gpt_competition_score:
+        sc && typeof sc.gpt === 'number' ? sc.gpt : null,
+      phi_competition_score:
+        sc && typeof sc.phi === 'number' ? sc.phi : null,
+      mistral_competition_score:
+        sc && typeof sc.mistral === 'number' ? sc.mistral : null,
     }
 
     console.log('Attempting Supabase insert:', insertData)

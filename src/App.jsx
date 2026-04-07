@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Settings } from 'lucide-react'
 import AuditTrail from './components/AuditTrail.jsx'
+import CompetitionResults from './components/CompetitionResults.jsx'
 import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
@@ -35,7 +36,15 @@ function readWorkflowSidebarCollapsed() {
   }
 }
 
-const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
+const DEFAULT_SCORES = {
+  ab: 0,
+  ac: 0,
+  bc: 0,
+  average: 0,
+  totalClaims: 0,
+  contestedClaims: 0,
+  unanimousClaims: 0,
+}
 
 /** GitHub Pages (etc.): set VITE_DEPLOY_PATH=babel so routes match /babel/about */
 const DEPLOY_PATH =
@@ -86,6 +95,13 @@ const DOC_TITLE_RUNNING = '⟳ Babel — Debate running...'
 const DOC_TITLE_COMPLETE = '✓ Babel — Debate complete'
 const DOC_TITLE_ERROR = '✗ Babel — Something went wrong'
 const DOC_TITLE_PARTIAL = '◐ Babel — Debate ended early'
+
+/** @param {React.RefObject<HTMLElement | null>} ref */
+function scrollSectionIntoView(ref) {
+  window.setTimeout(() => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 300)
+}
 
 function HeaderAgentPill({ name, color }) {
   return (
@@ -180,7 +196,8 @@ export default function App() {
       state.rounds.length > 0 ||
       state.rebuttals?.a != null ||
       state.finalPositions?.a != null ||
-      state.synthesis != null)
+      state.synthesis != null ||
+      state.synthesisWinner != null)
 
   useEffect(() => {
     try {
@@ -249,41 +266,95 @@ export default function App() {
     /** @type {{ focusPrompt: () => void } | null} */ (null)
   )
 
+  const round1Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const round2Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const round3Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const finalPositionsRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const synthesisRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const auditRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+
+  const bindRound3AndFinalsRef = useCallback(
+    /** @param {HTMLDivElement | null} el */ (el) => {
+      round3Ref.current = el
+      finalPositionsRef.current = el
+    },
+    []
+  )
+
   const focusPromptAfterExample = useCallback(() => {
     promptInputRef.current?.focusPrompt()
   }, [])
 
-  const roundsLenRef = useRef(0)
-  useEffect(() => {
-    const n = state.rounds.length
-    if (n > roundsLenRef.current && n > 0) {
-      const last = state.rounds.reduce((best, r) =>
-        r.roundNum > best.roundNum ? r : best
-      )
-      requestAnimationFrame(() => {
-        document
-          .getElementById(`forge-round-${last.roundNum}`)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
-    }
-    roundsLenRef.current = n
-  }, [state.rounds])
-
+  const prevStatusRef = useRef(state.status)
+  const lastCompletedStagePrevRef = useRef(
+    /** @type {typeof state.lastCompletedStage} */ (null)
+  )
+  const r2ScrollDoneRef = useRef(false)
+  const r3ScrollDoneRef = useRef(false)
   const synthesisSeenRef = useRef(false)
+  const auditStageSeenRef = useRef(false)
+
   useEffect(() => {
-    if (state.synthesis) {
-      if (!synthesisSeenRef.current) {
-        synthesisSeenRef.current = true
-        requestAnimationFrame(() => {
-          document
-            .getElementById('forge-synthesis')
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        })
-      }
-    } else {
+    const prev = prevStatusRef.current
+    prevStatusRef.current = state.status
+    if (prev !== 'running' && state.status === 'running') {
+      lastCompletedStagePrevRef.current = null
+      r2ScrollDoneRef.current = false
+      r3ScrollDoneRef.current = false
       synthesisSeenRef.current = false
+      auditStageSeenRef.current = false
     }
+  }, [state.status])
+
+  /** After round 1, cross-review thinking begins → scroll to round 2. */
+  useEffect(() => {
+    if (state.status !== 'running' || r2ScrollDoneRef.current) return
+    if (state.reviewTimers?.a?.startTime == null) return
+    r2ScrollDoneRef.current = true
+    scrollSectionIntoView(round2Ref)
+  }, [state.status, state.reviewTimers?.a?.startTime])
+
+  /** Stage milestones: round 3 block, finals, synthesis, audit. */
+  useEffect(() => {
+    const lcs = state.lastCompletedStage
+    const prev = lastCompletedStagePrevRef.current
+    lastCompletedStagePrevRef.current = lcs
+    if (lcs === 'reviews' && prev !== 'reviews') {
+      r3ScrollDoneRef.current = false
+      scrollSectionIntoView(round3Ref)
+    }
+    if (lcs === 'finalPositions' && prev !== 'finalPositions') {
+      scrollSectionIntoView(finalPositionsRef)
+    }
+    if (lcs === 'synthesis' && prev !== 'synthesis') {
+      scrollSectionIntoView(synthesisRef)
+    }
+  }, [state.lastCompletedStage])
+
+  /** Round 3 final thinking started — scroll finals section if needed. */
+  useEffect(() => {
+    if (state.status !== 'running' || r3ScrollDoneRef.current) return
+    if (state.finalPositionTimers?.a?.startTime == null) return
+    r3ScrollDoneRef.current = true
+    scrollSectionIntoView(finalPositionsRef)
+  }, [state.status, state.finalPositionTimers?.a?.startTime])
+
+  useEffect(() => {
+    if (!state.synthesis) {
+      synthesisSeenRef.current = false
+      return
+    }
+    if (synthesisSeenRef.current) return
+    synthesisSeenRef.current = true
+    scrollSectionIntoView(synthesisRef)
   }, [state.synthesis])
+
+  useEffect(() => {
+    if (state.lastCompletedStage !== 'audit') return
+    if (auditStageSeenRef.current) return
+    auditStageSeenRef.current = true
+    scrollSectionIntoView(auditRef)
+  }, [state.lastCompletedStage])
 
   const mainMobilePt = showWorkflowSidebar
     ? 'pt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
@@ -450,34 +521,50 @@ export default function App() {
                     id={`forge-round-${round.roundNum}`}
                     className={`flex ${roundScrollMt} flex-col gap-12 md:scroll-mt-8`}
                   >
-                    <RoundCard
-                      roundNum={round.roundNum}
-                      scores={scores}
-                      round={round}
-                      config={cfg}
-                      agentTimers={state.agentTimers}
-                    />
-                    {review ? (
-                      <ReviewCard
-                        key={`review-${review.roundNum}`}
-                        roundNum={review.roundNum}
-                        aReviews={review.aReviews}
-                        bReviews={review.bReviews}
-                        cReviews={review.cReviews}
+                    <div
+                      ref={
+                        round.roundNum === 1 ? round1Ref : undefined
+                      }
+                    >
+                      <RoundCard
+                        roundNum={round.roundNum}
+                        scores={scores}
+                        round={round}
                         config={cfg}
-                        reviewTimers={state.reviewTimers}
+                        agentTimers={state.agentTimers}
+                      />
+                    </div>
+                    {review ? (
+                      <div ref={round2Ref}>
+                        <ReviewCard
+                          key={`review-${review.roundNum}`}
+                          roundNum={review.roundNum}
+                          aReviews={review.aReviews}
+                          bReviews={review.bReviews}
+                          cReviews={review.cReviews}
+                          config={cfg}
+                          reviewTimers={state.reviewTimers}
+                        />
+                      </div>
+                    ) : null}
+                    {state.synthesisWinner ? (
+                      <CompetitionResults
+                        synthesisWinner={state.synthesisWinner}
+                        config={cfg}
                       />
                     ) : null}
                     {crossReviewComplete ? (
-                      <FinalPositionCard
-                        config={cfg}
-                        scores={scores}
-                        finalPositions={state.finalPositions}
-                        finalPositionTimers={state.finalPositionTimers}
-                        agentTimers={state.agentTimers}
-                        reviewTimers={state.reviewTimers}
-                        rebuttalTimers={state.rebuttalTimers}
-                      />
+                      <div ref={bindRound3AndFinalsRef}>
+                        <FinalPositionCard
+                          config={cfg}
+                          scores={scores}
+                          finalPositions={state.finalPositions}
+                          finalPositionTimers={state.finalPositionTimers}
+                          agentTimers={state.agentTimers}
+                          reviewTimers={state.reviewTimers}
+                          rebuttalTimers={state.rebuttalTimers}
+                        />
+                      </div>
                     ) : null}
                   </div>
                 )
@@ -486,6 +573,7 @@ export default function App() {
               {state.synthesis != null ? (
                 <>
                   <div
+                    ref={synthesisRef}
                     id="forge-synthesis"
                     className={`${roundScrollMt} md:scroll-mt-8`}
                   >
@@ -510,7 +598,20 @@ export default function App() {
                 </>
               ) : null}
               {state.status === 'complete' || state.status === 'partial' ? (
-                <AuditTrail />
+                <>
+                  {state.synthesis != null &&
+                  state.divergenceScores.length > 0 ? (
+                    <p className="mx-auto mb-6 max-w-xl px-6 text-center font-[family-name:var(--font-mono)] text-[11px] italic leading-relaxed text-[var(--text-muted)] md:px-10">
+                      Note: claim disagreement scores reflect how agents aligned on each
+                      audited claim (agree / disagree / partial / silent), not embedding
+                      similarity. Pairwise averages can look high even when final claims
+                      largely agree, if phrasing or partial stances differ across the audit.
+                    </p>
+                  ) : null}
+                  <div ref={auditRef} className={roundScrollMt}>
+                    <AuditTrail />
+                  </div>
+                </>
               ) : null}
             </div>
           </>

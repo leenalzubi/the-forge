@@ -1,5 +1,8 @@
 import { createContext, createElement, useContext, useReducer } from 'react'
-import { AGENT_TIMEOUT_MESSAGE } from '../lib/debateConstants.js'
+import {
+  AGENT_TIMEOUT_MESSAGE,
+  TOTAL_MODEL_CALLS,
+} from '../lib/debateConstants.js'
 import { loadForgeSettings } from '../lib/forgeSettings.js'
 
 /** @typedef {'idle' | 'running' | 'complete' | 'error' | 'partial'} ForgeStatus */
@@ -23,7 +26,7 @@ function createInitialState() {
     rounds: [],
     /** @type {{ roundNum: number, aReviews: string, bReviews: string, cReviews: string }[]} */
     reviews: [],
-    /** @type {{ ab: number, ac: number, bc: number, average: number }[]} */
+    /** @type {{ ab: number, ac: number, bc: number, average: number, totalClaims?: number, contestedClaims?: number, unanimousClaims?: number, hardDisagreements?: number }[]} */
     divergenceScores: [],
     /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string, concessions: string[], heldFirm: string[] } | null} */
     synthesis: null,
@@ -77,7 +80,13 @@ function createInitialState() {
     auditError: /** @type {string | null} */ (null),
     /** Peer validation of synthesis (agents B & C). Null when no run or synthesis skipped. */
     validation: null,
-    /** Completed model API calls in the current run (max 15). */
+    /** Cross-review peer scores; highest average earns synthesis. */
+    synthesisWinner: /** @type {null | {
+      winner: 'gpt' | 'phi' | 'mistral',
+      scores: { gpt: number, phi: number, mistral: number },
+      evaluations: unknown,
+    }} */ (null),
+    /** Completed model API calls in the current run. */
     progressCallsCompleted: 0,
     /** Last major stage that finished successfully before an error/partial stop. */
     /** @type {DebateStageKey} */
@@ -115,6 +124,7 @@ function forgeReducer(state, action) {
           auditLoading: false,
           auditError: null,
           validation: null,
+          synthesisWinner: null,
           progressCallsCompleted: 0,
           lastCompletedStage: null,
           isPartial: false,
@@ -151,7 +161,10 @@ function forgeReducer(state, action) {
           : 1
       return {
         ...state,
-        progressCallsCompleted: Math.min(15, (state.progressCallsCompleted ?? 0) + add),
+        progressCallsCompleted: Math.min(
+          TOTAL_MODEL_CALLS,
+          (state.progressCallsCompleted ?? 0) + add
+        ),
       }
     }
 
@@ -159,6 +172,19 @@ function forgeReducer(state, action) {
       return {
         ...state,
         timeoutCount: (state.timeoutCount ?? 0) + 1,
+      }
+
+    case 'SET_SYNTHESIS_WINNER':
+      return {
+        ...state,
+        synthesisWinner:
+          action.payload &&
+          typeof action.payload === 'object' &&
+          'winner' in action.payload
+            ? /** @type {NonNullable<typeof state.synthesisWinner>} */ (
+                action.payload
+              )
+            : null,
       }
 
     case 'SET_AUDIT':
@@ -318,18 +344,37 @@ function forgeReducer(state, action) {
     }
 
     case 'SET_DIVERGENCE': {
-      const { ab, ac, bc, average } = action.payload
+      const p = action.payload && typeof action.payload === 'object' ? action.payload : {}
+      const entry = {
+        ab: Number(p.ab),
+        ac: Number(p.ac),
+        bc: Number(p.bc),
+        average: Number(p.average),
+        totalClaims:
+          typeof p.totalClaims === 'number' ? Math.round(p.totalClaims) : 0,
+        contestedClaims:
+          typeof p.contestedClaims === 'number'
+            ? Math.round(p.contestedClaims)
+            : 0,
+        unanimousClaims:
+          typeof p.unanimousClaims === 'number'
+            ? Math.round(p.unanimousClaims)
+            : 0,
+        hardDisagreements:
+          typeof p.hardDisagreements === 'number'
+            ? Math.round(p.hardDisagreements)
+            : 0,
+      }
+      const replaceLast = p.mode === 'replaceLast'
+      const prev = state.divergenceScores
+      if (replaceLast && prev.length > 0) {
+        const copy = [...prev]
+        copy[copy.length - 1] = entry
+        return { ...state, divergenceScores: copy }
+      }
       return {
         ...state,
-        divergenceScores: [
-          ...state.divergenceScores,
-          {
-            ab: Number(ab),
-            ac: Number(ac),
-            bc: Number(bc),
-            average: Number(average),
-          },
-        ],
+        divergenceScores: [...prev, entry],
       }
     }
 

@@ -190,9 +190,13 @@ export default function SettingsDrawer({ open, onClose }) {
                     : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
                 }`}
               >
-                Only synthesize if semantic divergence &gt; 40%
+                Only synthesize if claim disagreement &gt; 40%
               </button>
             </div>
+            <p className="mt-2 font-mono text-[10px] leading-relaxed text-[var(--text-muted)]">
+              Claim disagreement is computed after the debate audit. Until a pre-synthesis
+              gate exists, both modes run synthesis whenever synthesis is enabled.
+            </p>
           </section>
 
           <section>

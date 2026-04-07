@@ -117,7 +117,7 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
             <TotalDebateTimer totalMs={totalMs} />
           </div>
         </div>
-        <div className="max-h-[320px] overflow-y-auto px-4 pb-4 pt-1">
+        <div className="forge-response-scroll px-4 pb-4 pt-1">
           <AgentResponseBody rawText={text} markdownClassName={replyMd} />
         </div>
       </div>
@@ -259,9 +259,6 @@ function FinalPositionCard({
 
       {showTriangle && scores ? (
         <div className="flex flex-col items-center border-t border-dashed border-[var(--border)] pt-6">
-          <p className="mb-3 font-mono text-[10px] text-[var(--text-muted)]">
-            Overall semantic divergence
-          </p>
           <TriangleConsensus scores={scores} initials={initials} />
         </div>
       ) : null}
