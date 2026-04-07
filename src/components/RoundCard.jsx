@@ -23,8 +23,8 @@ function DivergenceChip({ label, color, pct }) {
         {label}
         <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
       </span>
-      <span className="text-[8px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
-        semantic
+      <span className="text-[8px] font-normal tracking-wide text-[var(--text-muted)]">
+        Semantic
       </span>
     </span>
   )
@@ -43,7 +43,7 @@ function RoundAgentPanel({ title, color, text, startTime, endTime }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-4">
         <span
-          className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+          className="font-mono text-[10px] font-semibold tracking-wide"
           style={{ color }}
         >
           {title}
@@ -66,7 +66,7 @@ function RoundAgentWaiting({ title, color }) {
   return (
     <div className="rounded-forge-card flex min-h-[200px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-10">
       <span
-        className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+        className="font-mono text-[10px] font-semibold tracking-wide"
         style={{ color }}
       >
         {title}
@@ -184,7 +184,7 @@ function RoundCard({ roundNum, scores, round, config, agentTimers }) {
 
   return (
     <section className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6 sm:p-8">
-      <h2 className="mb-6 border-b border-dashed border-[var(--border)] pb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+      <h2 className="mb-6 border-b border-dashed border-[var(--border)] pb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
         Round {roundNum} — independent responses
       </h2>
 

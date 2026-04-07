@@ -93,7 +93,7 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-4">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span
-              className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+              className="font-mono text-[10px] font-semibold tracking-wide"
               style={{ color: agentSpec.color }}
             >
               {agentSpec.name}
@@ -134,7 +134,7 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
   return (
     <div className="rounded-forge-card flex min-h-[180px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-8">
       <span
-        className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+        className="font-mono text-[10px] font-semibold tracking-wide"
         style={{ color: agentSpec.color }}
       >
         {agentSpec.name}
@@ -207,8 +207,8 @@ function FinalPositionCard({
             className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
             aria-hidden
           />
-          <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Round 4 — Final Positions
+          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Round 4 — final positions
           </h3>
         </div>
         <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">

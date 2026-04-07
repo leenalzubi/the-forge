@@ -25,12 +25,19 @@ function pct(s) {
   return Math.min(100, Math.max(0, Math.round(n * 100)))
 }
 
+/** G↔P (A–B): blue · G↔M (A–C): red · P↔M (B–C): green — hue matches “source” vertex of each pair. */
+const EDGE_STROKE = {
+  ab: '#2563EB',
+  ac: '#DC2626',
+  bc: '#16A34A',
+}
+
 /** @param {number} s 0–1 */
-function edgeStyle(s) {
+function edgeWidthForScore(s) {
   const p = pct(s)
-  if (p <= 30) return { stroke: 'var(--agree)', strokeWidth: 2.5 }
-  if (p <= 60) return { stroke: 'var(--neutral)', strokeWidth: 4 }
-  return { stroke: 'var(--diverge)', strokeWidth: 6 }
+  if (p <= 30) return 2.5
+  if (p <= 60) return 4
+  return 6
 }
 
 /** @param {number} avg 0–1 */
@@ -62,7 +69,7 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
       aria-label="Pairwise semantic divergence: measures meaning similarity between responses, not shared vocabulary."
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <span className="font-mono text-[10px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
           Divergence
         </span>
         <span className="font-mono text-[10px] text-[var(--text-secondary)]">
@@ -76,40 +83,28 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
         />
       </div>
       <div className="flex justify-between gap-2 font-mono text-[9px] text-[var(--text-muted)]">
-        <span className="flex flex-col items-center gap-0.5 text-center">
-          <span>
-            <span className="text-[var(--text-secondary)]">
-              {initials.a}–{initials.b}
-            </span>{' '}
-            {pct(ab)}%
-          </span>
-          <span className="text-[8px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
-            semantic
-          </span>
+        <span className="text-center">
+          <span className="text-[var(--text-secondary)]">
+            {initials.a}–{initials.b}
+          </span>{' '}
+          {pct(ab)}%
         </span>
-        <span className="flex flex-col items-center gap-0.5 text-center">
-          <span>
-            <span className="text-[var(--text-secondary)]">
-              {initials.a}–{initials.c}
-            </span>{' '}
-            {pct(ac)}%
-          </span>
-          <span className="text-[8px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
-            semantic
-          </span>
+        <span className="text-center">
+          <span className="text-[var(--text-secondary)]">
+            {initials.a}–{initials.c}
+          </span>{' '}
+          {pct(ac)}%
         </span>
-        <span className="flex flex-col items-center gap-0.5 text-center">
-          <span>
-            <span className="text-[var(--text-secondary)]">
-              {initials.b}–{initials.c}
-            </span>{' '}
-            {pct(bc)}%
-          </span>
-          <span className="text-[8px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
-            semantic
-          </span>
+        <span className="text-center">
+          <span className="text-[var(--text-secondary)]">
+            {initials.b}–{initials.c}
+          </span>{' '}
+          {pct(bc)}%
         </span>
       </div>
+      <p className="mt-2 text-center font-mono text-[10px] text-[var(--text-muted)]">
+        Semantic divergence
+      </p>
     </div>
   )
 }
@@ -136,9 +131,9 @@ export default function TriangleConsensus({
     return () => cancelAnimationFrame(id)
   }, [])
 
-  const dAB = edgeStyle(ab)
-  const dAC = edgeStyle(ac)
-  const dBC = edgeStyle(bc)
+  const wAB = edgeWidthForScore(ab)
+  const wAC = edgeWidthForScore(ac)
+  const wBC = edgeWidthForScore(bc)
 
   const avgP = pct(average)
 
@@ -167,34 +162,39 @@ export default function TriangleConsensus({
         <defs>
           <style>{`
             .tc-edge-label { font-family: var(--font-mono), monospace; font-size: 9px; fill: var(--text-secondary); }
-            .tc-edge-semantic { font-family: var(--font-mono), monospace; font-size: 6px; font-weight: 500; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
             .tc-center-pct { font-family: var(--font-mono), monospace; font-size: 17px; font-weight: 600; fill: var(--text-primary); }
             .tc-center-lbl { font-family: var(--font-mono), monospace; font-size: 9px; fill: var(--text-muted); }
             .tc-init { font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; fill: #fff; }
           `}</style>
         </defs>
 
-        <path d={PATH_AB} {...commonPath} stroke={dAB.stroke} strokeWidth={dAB.strokeWidth} />
-        <path d={PATH_AC} {...commonPath} stroke={dAC.stroke} strokeWidth={dAC.strokeWidth} />
-        <path d={PATH_BC} {...commonPath} stroke={dBC.stroke} strokeWidth={dBC.strokeWidth} />
+        <path
+          d={PATH_AB}
+          {...commonPath}
+          stroke={EDGE_STROKE.ab}
+          strokeWidth={wAB}
+        />
+        <path
+          d={PATH_AC}
+          {...commonPath}
+          stroke={EDGE_STROKE.ac}
+          strokeWidth={wAC}
+        />
+        <path
+          d={PATH_BC}
+          {...commonPath}
+          stroke={EDGE_STROKE.bc}
+          strokeWidth={wBC}
+        />
 
-        <text x={MID_AB.x} y={MID_AB.y - 4} textAnchor="middle" className="tc-edge-label">
+        <text x={MID_AB.x} y={MID_AB.y + 4} textAnchor="middle" className="tc-edge-label">
           {pct(ab)}%
         </text>
-        <text x={MID_AB.x} y={MID_AB.y + 7} textAnchor="middle" className="tc-edge-semantic">
-          semantic
-        </text>
-        <text x={MID_AC.x} y={MID_AC.y - 4} textAnchor="middle" className="tc-edge-label">
+        <text x={MID_AC.x} y={MID_AC.y + 4} textAnchor="middle" className="tc-edge-label">
           {pct(ac)}%
         </text>
-        <text x={MID_AC.x} y={MID_AC.y + 7} textAnchor="middle" className="tc-edge-semantic">
-          semantic
-        </text>
-        <text x={MID_BC.x} y={MID_BC.y - 4} textAnchor="middle" className="tc-edge-label">
+        <text x={MID_BC.x} y={MID_BC.y + 4} textAnchor="middle" className="tc-edge-label">
           {pct(bc)}%
-        </text>
-        <text x={MID_BC.x} y={MID_BC.y + 7} textAnchor="middle" className="tc-edge-semantic">
-          semantic
         </text>
 
         <g>
@@ -232,15 +232,10 @@ export default function TriangleConsensus({
         >
           {contextLabel(average)}
         </text>
-        <text
-          x={CENTER.x}
-          y={CENTER.y + 22}
-          textAnchor="middle"
-          className="tc-edge-semantic"
-        >
-          semantic
-        </text>
       </svg>
+      <figcaption className="mt-1 text-center font-mono text-[10px] text-[var(--text-muted)]">
+        Semantic divergence
+      </figcaption>
     </figure>
   )
 }

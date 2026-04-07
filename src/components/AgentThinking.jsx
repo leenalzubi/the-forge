@@ -26,7 +26,7 @@ export default function AgentThinking({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed border-[var(--border)] px-4 py-3">
         <span
-          className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+          className="font-mono text-[10px] font-semibold tracking-wide"
           style={{ color }}
         >
           {title}

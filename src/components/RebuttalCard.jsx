@@ -16,9 +16,9 @@ function StanceBadge({ stance }) {
     modified: 'bg-[#D97706]/12 text-[#B45309] ring-1 ring-[#D97706]/25',
   }
   const labels = {
-    conceded: 'CONCEDED',
-    held: 'HELD FIRM',
-    modified: 'MODIFIED',
+    conceded: 'Conceded',
+    held: 'Held firm',
+    modified: 'Modified',
   }
   return (
     <span
@@ -67,7 +67,7 @@ function RebuttalColumn({
                 aria-hidden
               />
               <h4
-                className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+                className="font-mono text-[10px] font-semibold tracking-wide"
                 style={{ color: agentSpec.color }}
               >
                 {agentSpec.name}
@@ -109,7 +109,7 @@ function RebuttalColumn({
   return (
     <div className="rounded-forge-card flex min-h-[140px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-8">
       <span
-        className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+        className="font-mono text-[10px] font-semibold tracking-wide"
         style={{ color: agentSpec.color }}
       >
         {agentSpec.name}
@@ -150,8 +150,8 @@ function RebuttalCard({ config, rebuttals, rebuttalTimers }) {
             className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
             aria-hidden
           />
-          <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Round 3 — Rebuttals
+          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Round 3 — rebuttals
           </h3>
         </div>
         <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">

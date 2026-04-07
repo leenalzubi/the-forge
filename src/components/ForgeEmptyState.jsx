@@ -94,7 +94,7 @@ export default function ForgeEmptyState({ onPickExample, onAfterExamplePick }) {
         synthesize a refined answer.
       </p>
       <div className="mt-8 flex w-full max-w-md flex-col gap-2">
-        <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <span className="font-mono text-[10px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
           Try an example
         </span>
         <div className="flex flex-col gap-2">

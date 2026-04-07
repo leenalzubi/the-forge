@@ -147,7 +147,7 @@ export default function SynthesisPanel({ synthesis }) {
               >
                 <p
                   id="synthesis-how-works-heading"
-                  className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+                  className="font-mono text-[10px] font-semibold tracking-wide text-[var(--text-muted)]"
                 >
                   How this works
                 </p>
@@ -181,7 +181,7 @@ export default function SynthesisPanel({ synthesis }) {
 
       {divergence && (
         <div className="border-t border-dashed border-[var(--border)] bg-[var(--bg-synthesis)] px-6 py-6 md:px-10">
-          <p className="mb-2 text-center font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <p className="mb-2 text-center font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
             Overall divergence
           </p>
           <p className="mx-auto mb-4 max-w-md text-center font-sans text-[11px] leading-relaxed italic text-[var(--text-muted)]">
@@ -201,7 +201,7 @@ export default function SynthesisPanel({ synthesis }) {
       </div>
 
       <div className="border-t border-dashed border-[var(--border)] px-6 py-6 md:px-10">
-        <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
           Contributions
         </h3>
         <div className="flex flex-col flex-wrap gap-2 sm:flex-row sm:gap-3">
@@ -229,7 +229,7 @@ export default function SynthesisPanel({ synthesis }) {
 
       {settings.showRationale && rationale ? (
         <div className="border-t border-dashed border-[var(--border)] px-6 py-6 md:px-10">
-          <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <h3 className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
             Why this answer
           </h3>
           <p className="text-[17px] italic leading-relaxed text-[var(--text-secondary)]">

@@ -38,6 +38,11 @@ function readWorkflowSidebarCollapsed() {
 
 const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
 
+const DOC_TITLE_DEFAULT = 'Babel — Multi-Model Debate Engine'
+const DOC_TITLE_RUNNING = '⟳ Babel — Debate running...'
+const DOC_TITLE_COMPLETE = '✓ Babel — Debate complete'
+const DOC_TITLE_ERROR = '✗ Babel — Something went wrong'
+
 function HeaderAgentPill({ name, color }) {
   return (
     <div className="inline-flex max-w-[160px] items-center gap-2 truncate sm:max-w-none">
@@ -85,6 +90,31 @@ export default function App() {
       /* ignore */
     }
   }, [workflowSidebarCollapsed])
+
+  useEffect(() => {
+    if (state.status === 'running') {
+      document.title = DOC_TITLE_RUNNING
+    } else if (state.status === 'complete') {
+      document.title = DOC_TITLE_COMPLETE
+    } else if (state.status === 'error') {
+      document.title = DOC_TITLE_ERROR
+    } else {
+      document.title = DOC_TITLE_DEFAULT
+    }
+  }, [state.status])
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return
+      if (state.status === 'running') {
+        document.title = DOC_TITLE_RUNNING
+      } else {
+        document.title = DOC_TITLE_DEFAULT
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [state.status])
 
   const cfg = state.config
 

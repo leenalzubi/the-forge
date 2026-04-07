@@ -9,7 +9,7 @@ export default function LiveAgentStrip({ state }) {
   return (
     <section className="mb-10" aria-label="Agent roll call">
       <div className="mb-4">
-        <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+        <h2 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
           Roll call
         </h2>
         <p className="mt-1 max-w-xl font-mono text-[9px] leading-relaxed text-[var(--text-muted)]">
@@ -63,7 +63,7 @@ export default function LiveAgentStrip({ state }) {
                   aria-hidden
                 />
                 <span
-                  className="min-w-0 truncate font-mono text-[10px] font-semibold uppercase tracking-wide"
+                  className="min-w-0 truncate font-mono text-[10px] font-semibold tracking-wide"
                   style={{ color: spec.color }}
                 >
                   {spec.name}

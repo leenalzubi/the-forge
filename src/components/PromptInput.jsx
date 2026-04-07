@@ -133,7 +133,8 @@ function PromptInputInner(
           role="status"
         >
           <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasToken ? 'bg-[var(--agree)]' : 'bg-[var(--diverge)]'}`}
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasToken ? '' : 'bg-[var(--diverge)]'}`}
+            style={hasToken ? { backgroundColor: '#16A34A' } : undefined}
             aria-hidden
           />
           {statusMessage}

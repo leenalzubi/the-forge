@@ -74,9 +74,10 @@ function PositionCell({ value }) {
 function VerdictPill({ verdict, minorityIncluded }) {
   const v = str(verdict).toLowerCase()
   const base =
-    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide'
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium tracking-wide'
   if (minorityIncluded || v === 'minority') {
-    const label = v === 'minority' || !v ? 'minority' : v
+    const label =
+      v === 'minority' || !v ? 'Minority' : v.charAt(0).toUpperCase() + v.slice(1)
     return (
       <span
         className={`${base} bg-[#DC2626]/12 text-[#B91C1C]`}
@@ -91,7 +92,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
       <span
         className={`${base} bg-[#16A34A]/12 text-[#15803D]`}
       >
-        unanimous
+        Unanimous
       </span>
     )
   }
@@ -100,7 +101,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
       <span
         className={`${base} bg-[#2563EB]/10 text-[#1D4ED8]`}
       >
-        majority
+        Majority
       </span>
     )
   }
@@ -109,7 +110,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
       <span
         className={`${base} bg-[#D97706]/12 text-[#B45309]`}
       >
-        contested
+        Contested
       </span>
     )
   }
@@ -129,12 +130,22 @@ function ChallengeTypeBadge({ type }) {
     reframe: 'bg-[var(--bg-notebook)] text-[var(--text-muted)]',
     none: 'bg-[var(--bg-base)] text-[var(--text-muted)]',
   }
+  const labelMap = {
+    direct: 'Direct',
+    implicit: 'Implicit',
+    reframe: 'Reframe',
+    none: 'None',
+  }
   const cls = map[/** @type {keyof typeof map} */ (t)] ?? map.none
+  const mapped = labelMap[/** @type {keyof typeof labelMap} */ (t)]
+  const label =
+    mapped ??
+    (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'None')
   return (
     <span
-      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide ${cls}`}
+      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] tracking-wide ${cls}`}
     >
-      {t || 'none'}
+      {label}
     </span>
   )
 }
@@ -143,9 +154,13 @@ function ChallengeTypeBadge({ type }) {
 function FramingBadge({ framing }) {
   const f = str(framing).toLowerCase()
   const danger = f === 'modified' || f === 'dropped'
+  const label =
+    !f || f === '—'
+      ? '—'
+      : f.charAt(0).toUpperCase() + f.slice(1)
   return (
     <span
-      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] tracking-wide ${
         danger
           ? f === 'dropped'
             ? 'bg-[#DC2626]/12 text-[#B91C1C]'
@@ -153,7 +168,7 @@ function FramingBadge({ framing }) {
           : 'bg-[var(--bg-raised)] text-[var(--text-secondary)]'
       }`}
     >
-      {f || '—'}
+      {label}
     </span>
   )
 }
@@ -203,7 +218,7 @@ function TracePanel({ trace, config }) {
     >
       <section className="mb-6">
         <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-          01 ORIGIN
+          01 Origin
         </p>
         <p className="font-[family-name:var(--font-body)]">
           Introduced by{' '}
@@ -220,7 +235,7 @@ function TracePanel({ trace, config }) {
 
       <section className="mb-6">
         <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-          02 CHALLENGE
+          02 Challenge
         </p>
         {challenge.occurred ? (
           <>
@@ -248,7 +263,7 @@ function TracePanel({ trace, config }) {
 
       <section className="mb-6">
         <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-          03 DEFENSE
+          03 Defense
         </p>
         {defense.occurred ? (
           <>
@@ -273,7 +288,7 @@ function TracePanel({ trace, config }) {
 
       <section>
         <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-          04 SYNTHESIS DECISION
+          04 Synthesis decision
         </p>
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <FramingBadge framing={str(syn.framing)} />
@@ -412,7 +427,7 @@ export default function AuditTrail() {
     >
       {concessions.length > 0 ? (
         <div className="mb-10 rounded-[6px] border border-dashed border-[#16A34A]/35 bg-[#16A34A]/6 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#15803D]">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#15803D]">
             Concessions made
           </h3>
           <ul className="flex flex-col gap-3">
@@ -445,7 +460,7 @@ export default function AuditTrail() {
 
       {heldFirmLines.length > 0 ? (
         <div className="mb-10 rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
             Positions maintained under challenge
           </h3>
           <ul className="flex flex-col gap-3">
@@ -498,7 +513,7 @@ export default function AuditTrail() {
       {audit ? (
         <>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            <h2 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
               Audit trail
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -534,18 +549,18 @@ export default function AuditTrail() {
                   </colgroup>
                   <thead>
                     <tr className="border-b border-[#D4C9B0]">
-                      <th className="px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+                      <th className="px-3 py-2 font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
                         Claim
                       </th>
                       {colLabels.map((lab) => (
                         <th
                           key={lab}
-                          className="px-2 py-2 text-center font-mono text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]"
+                          className="px-2 py-2 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
                         >
                           {lab}
                         </th>
                       ))}
-                      <th className="px-2 py-2 text-center font-mono text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+                      <th className="px-2 py-2 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
                         Verdict
                       </th>
                     </tr>

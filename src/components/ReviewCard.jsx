@@ -43,7 +43,7 @@ function CrossReviewAgentCard({
             aria-hidden
           />
           <h4
-            className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+            className="font-mono text-[10px] font-semibold tracking-wide"
             style={{ color: titleColor }}
           >
             {title}
@@ -67,7 +67,7 @@ function CrossReviewWaiting({ title, color }) {
   return (
     <div className="rounded-forge-card flex min-h-[160px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-8">
       <span
-        className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+        className="font-mono text-[10px] font-semibold tracking-wide"
         style={{ color }}
       >
         {title}
@@ -170,8 +170,8 @@ function ReviewCard({
             className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
             aria-hidden
           />
-          <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Cross-Review — Round {roundNum}
+          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Cross-review — round {roundNum}
           </h3>
         </div>
         <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">

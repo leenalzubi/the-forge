@@ -42,11 +42,10 @@ function TableSkeleton() {
   return (
     <div className="overflow-hidden rounded-forge-card border border-[var(--border)]">
       <table className="w-full border-collapse text-left font-sans text-sm">
-        <thead className="border-b border-[var(--border)] bg-[var(--bg-raised)]/60 font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+        <thead className="border-b border-[var(--border)] bg-[var(--bg-raised)]/60 font-mono text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
           <tr>
             {[
               'Date',
-              'Prompt',
               'Avg Δ',
               'A↔B',
               'A↔C',
@@ -63,7 +62,7 @@ function TableSkeleton() {
         <tbody>
           {Array.from({ length: 8 }, (_, i) => (
             <tr key={i} className="border-b border-[var(--border)]">
-              {Array.from({ length: 8 }, (_, j) => (
+              {Array.from({ length: 7 }, (_, j) => (
                 <td key={j} className="px-3 py-3">
                   <div className="h-4 w-full animate-pulse rounded bg-[var(--border)]/60" />
                 </td>
@@ -80,7 +79,7 @@ function TableSkeleton() {
 function StatCard({ title, value, subtitle }) {
   return (
     <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
-      <p className="mb-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+      <p className="mb-1 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
         {title}
       </p>
       <p className="text-lg font-semibold text-[var(--text-primary)]">
@@ -103,7 +102,6 @@ export default function FindingsPanel() {
   const [divMin, setDivMin] = useState(0)
   const [divMax, setDivMax] = useState(100)
   const [sort, setSort] = useState(/** @type {'recent' | 'contested' | 'aligned'} */ ('recent'))
-  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [expandedId, setExpandedId] = useState(/** @type {string | null} */ (null))
 
@@ -122,7 +120,34 @@ export default function FindingsPanel() {
       setFetchError(null)
       const { data, error } = await supabase
         .from('debates')
-        .select('*')
+        .select(
+          [
+            'id',
+            'created_at',
+            'model_a',
+            'model_b',
+            'model_c',
+            'divergence_ab',
+            'divergence_ac',
+            'divergence_bc',
+            'divergence_avg',
+            'rounds',
+            'top_contributor',
+            'conflict_score_ab',
+            'conflict_score_ac',
+            'conflict_score_bc',
+            'challenged_most',
+            'dominant_agent',
+            'named_references_a',
+            'named_references_b',
+            'named_references_c',
+            'response_length_a',
+            'response_length_b',
+            'response_length_c',
+            'most_flexible',
+            'most_combative',
+          ].join(',')
+        )
         .order('created_at', { ascending: false })
 
       if (cancelled) return
@@ -150,47 +175,41 @@ export default function FindingsPanel() {
         ? null
         : valid.reduce((s, r) => s + Number(r.divergence_avg), 0) / valid.length
 
-    let mostRow = null
-    let maxAvg = -1
-    for (const r of rows) {
-      const v = Number(r.divergence_avg)
-      if (!Number.isNaN(v) && v > maxAvg) {
-        maxAvg = v
-        mostRow = r
+    /** @param {string} col */
+    function tallyAgentSlot(col) {
+      const tallies = new Map()
+      for (const r of rows) {
+        const slot = String(r[col] ?? '').toLowerCase()
+        if (slot !== 'a' && slot !== 'b' && slot !== 'c') continue
+        const model =
+          slot === 'a'
+            ? r.model_a
+            : slot === 'b'
+              ? r.model_b
+              : r.model_c
+        if (typeof model === 'string' && model) {
+          tallies.set(model, (tallies.get(model) ?? 0) + 1)
+        }
       }
+      let name = /** @type {string | null} */ (null)
+      let count = 0
+      for (const [k, n] of tallies) {
+        if (n > count) {
+          count = n
+          name = k
+        }
+      }
+      return { name, count }
     }
 
-    const tallies = new Map()
-    for (const r of rows) {
-      const tc = r.top_contributor
-      if (tc == null) continue
-      const key =
-        String(tc).toLowerCase() === 'a'
-          ? r.model_a
-          : String(tc).toLowerCase() === 'b'
-            ? r.model_b
-            : String(tc).toLowerCase() === 'c'
-              ? r.model_c
-              : null
-      if (typeof key === 'string' && key) {
-        tallies.set(key, (tallies.get(key) ?? 0) + 1)
-      }
-    }
-    let topModel = null
-    let topCount = 0
-    for (const [k, n] of tallies) {
-      if (n > topCount) {
-        topCount = n
-        topModel = k
-      }
-    }
+    const mostFlexible = tallyAgentSlot('most_flexible')
+    const mostCombative = tallyAgentSlot('most_combative')
 
     return {
       total,
       avgDiv,
-      mostRow,
-      topModel,
-      topCount,
+      mostFlexible,
+      mostCombative,
     }
   }, [rows])
 
@@ -329,11 +348,7 @@ export default function FindingsPanel() {
   }, [rows])
 
   const filteredSorted = useMemo(() => {
-    const q = search.trim().toLowerCase()
     let list = rows.filter((r) => {
-      const prev =
-        typeof r.prompt_preview === 'string' ? r.prompt_preview : ''
-      if (q && !prev.toLowerCase().includes(q)) return false
       const p = pct(r.divergence_avg)
       if (p === null) return false
       if (p < divMin || p > divMax) return false
@@ -359,11 +374,11 @@ export default function FindingsPanel() {
       )
     }
     return sorted
-  }, [rows, search, divMin, divMax, sort])
+  }, [rows, divMin, divMax, sort])
 
   useEffect(() => {
     setPage(1)
-  }, [divMin, divMax, sort, search])
+  }, [divMin, divMax, sort])
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
@@ -381,10 +396,11 @@ export default function FindingsPanel() {
         role="note"
       >
         <p className="font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
-          This dataset is shared publicly. Only the first 120 characters of each
-          prompt are stored. Never full responses or personal information. By
-          running a debate you consent to contributing anonymously to this
-          dataset.
+          This dataset is shared publicly as aggregate statistics and debate
+          metrics — not prompt text. Prompt excerpts are retained in the
+          database for research only and are not shown here. Never full
+          responses or personal information. By running a debate you consent to
+          contributing anonymously to this dataset.
         </p>
       </div>
 
@@ -401,33 +417,36 @@ export default function FindingsPanel() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total debates run" value={stats.total} />
+        <StatCard title="Total debates" value={stats.total} />
         <StatCard
-          title="Average semantic divergence"
+          title="Average divergence"
           value={
             stats.avgDiv == null ? '—' : `${pct(stats.avgDiv)}%`
           }
+          subtitle="higher = models reasoned more differently"
         />
         <StatCard
-          title="Most contested"
+          title="Most flexible agent"
           value={
-            stats.mostRow == null
+            stats.mostFlexible.name == null
               ? '—'
-              : `${pct(stats.mostRow.divergence_avg)}%`
-          }
-          subtitle={
-            stats.mostRow &&
-            typeof stats.mostRow.prompt_preview === 'string'
-              ? stats.mostRow.prompt_preview
-              : undefined
+              : `${stats.mostFlexible.name}${
+                  stats.mostFlexible.count > 0
+                    ? ` (${stats.mostFlexible.count})`
+                    : ''
+                }`
           }
         />
         <StatCard
-          title="Top contributor"
+          title="Most combative agent"
           value={
-            stats.topModel == null
+            stats.mostCombative.name == null
               ? '—'
-              : `${stats.topModel}${stats.topCount > 0 ? ` (${stats.topCount})` : ''}`
+              : `${stats.mostCombative.name}${
+                  stats.mostCombative.count > 0
+                    ? ` (${stats.mostCombative.count})`
+                    : ''
+                }`
           }
         />
       </div>
@@ -439,8 +458,8 @@ export default function FindingsPanel() {
 
       {supabaseConfigured ? (
         <section className="flex flex-col gap-4">
-          <h2 className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Agent Dynamics
+          <h2 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Agent dynamics
           </h2>
           {agentDynamics.n < 5 ? (
             <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-center text-sm text-[var(--text-secondary)]">
@@ -450,23 +469,16 @@ export default function FindingsPanel() {
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                  title="Most Combative Round"
+                  title="Most combative round"
                   value={
                     agentDynamics.combativeRow == null ||
                     agentDynamics.maxComb < 0
                       ? '—'
                       : `${Math.round(agentDynamics.maxComb * 100)}%`
                   }
-                  subtitle={
-                    agentDynamics.combativeRow &&
-                    typeof agentDynamics.combativeRow.prompt_preview ===
-                      'string'
-                      ? agentDynamics.combativeRow.prompt_preview
-                      : undefined
-                  }
                 />
                 <StatCard
-                  title="Most Challenged Agent"
+                  title="Most challenged agent"
                   value={
                     agentDynamics.mostChallengedName == null
                       ? '—'
@@ -474,7 +486,7 @@ export default function FindingsPanel() {
                   }
                 />
                 <StatCard
-                  title="Dominant Voice"
+                  title="Dominant voice"
                   value={
                     agentDynamics.dominantName == null ||
                     agentDynamics.dominantPct == null
@@ -488,14 +500,14 @@ export default function FindingsPanel() {
                   }
                 />
                 <StatCard
-                  title="Named Each Other"
+                  title="Named each other"
                   value={`${agentDynamics.namedPct}%`}
                   subtitle="Debates where at least one cross-review mentioned GPT, Phi, or Mistral"
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
-                <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  Personality Patterns
+                <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+                  Personality patterns
                 </h3>
                 <div className="space-y-4">
                   {(() => {
@@ -566,7 +578,7 @@ export default function FindingsPanel() {
 
       <div className="flex flex-col gap-4 rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-4 md:flex-row md:flex-wrap md:items-end">
         <div className="flex min-w-[200px] flex-1 flex-col gap-2">
-          <label className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          <label className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
             Divergence range ({divMin}% – {divMax}%)
           </label>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -599,7 +611,7 @@ export default function FindingsPanel() {
         <div className="flex min-w-[180px] flex-col gap-1">
           <label
             htmlFor="findings-sort"
-            className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+            className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]"
           >
             Sort
           </label>
@@ -615,22 +627,6 @@ export default function FindingsPanel() {
             <option value="contested">Most contested</option>
             <option value="aligned">Most aligned</option>
           </select>
-        </div>
-        <div className="flex min-w-[200px] flex-1 flex-col gap-1">
-          <label
-            htmlFor="findings-search"
-            className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
-          >
-            Search prompt
-          </label>
-          <input
-            id="findings-search"
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by preview text…"
-            className="rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-2 font-sans text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
-          />
         </div>
       </div>
 
@@ -649,14 +645,11 @@ export default function FindingsPanel() {
       ) : !loading ? (
         <>
           <div className="overflow-x-auto rounded-forge-card border border-[var(--border)]">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-[var(--bg-surface)] font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-[var(--bg-surface)] font-mono text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 font-medium">
                     Date
-                  </th>
-                  <th className="min-w-[140px] px-3 py-2 font-medium">
-                    Prompt preview
                   </th>
                   <th className="px-3 py-2 font-medium">Avg Δ</th>
                   <th className="px-3 py-2 font-medium">A↔B</th>
@@ -705,11 +698,6 @@ export default function FindingsPanel() {
                         <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">
                           {dateStr}
                         </td>
-                        <td className="max-w-[240px] truncate px-3 py-2 text-[var(--text-primary)]">
-                          {typeof row.prompt_preview === 'string'
-                            ? row.prompt_preview
-                            : '—'}
-                        </td>
                         <td
                           className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(row.divergence_avg)}`}
                         >
@@ -750,8 +738,8 @@ export default function FindingsPanel() {
                       </tr>
                       {expandedId === id ? (
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
-                          <td colSpan={8} className="px-6 py-6">
-                            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                          <td colSpan={7} className="px-6 py-6">
+                            <p className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
                               Pairwise divergence
                             </p>
                             <p className="mb-3 max-w-md font-sans text-[11px] italic leading-relaxed text-[var(--text-muted)]">

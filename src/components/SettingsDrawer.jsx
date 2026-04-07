@@ -21,7 +21,7 @@ function StatusPill({ label, ok }) {
           : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-muted)]'
       }`}
     >
-      {label}: {ok ? 'SET ✓' : 'NOT SET ✗'}
+      {label}: {ok ? 'Set ✓' : 'Not set ✗'}
     </span>
   )
 }
@@ -99,7 +99,7 @@ export default function SettingsDrawer({ open, onClose }) {
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-5">
           <section>
-            <label className="mb-2 block font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <label className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
               Max debate rounds
             </label>
             <div className="flex items-center gap-4">
@@ -127,7 +127,7 @@ export default function SettingsDrawer({ open, onClose }) {
           </section>
 
           <section>
-            <span className="mb-2 block font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <span className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
               Synthesis mode
             </span>
             <div className="flex flex-col gap-2">
@@ -175,7 +175,7 @@ export default function SettingsDrawer({ open, onClose }) {
           </section>
 
           <section>
-            <span className="mb-2 block font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <span className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
               API key status
             </span>
             <p className="mb-2 font-mono text-[10px] leading-snug text-[var(--text-muted)]">
@@ -190,7 +190,7 @@ export default function SettingsDrawer({ open, onClose }) {
 
           <section className="mt-auto border-t border-[var(--border)] pt-4">
             <h3 className="font-mono text-[11px] font-semibold text-[var(--text-primary)]">
-              Babel v1.0 — Multi-Model Debate Engine
+              Babel v1.0 — multi-model debate engine
             </h3>
           </section>
         </div>

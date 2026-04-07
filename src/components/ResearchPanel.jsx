@@ -1,4 +1,4 @@
-/** Living research brief — editorial layout, light and spacious. */
+/** About tab content — editorial layout, light and spacious. */
 
 /** Default forge agent accent colors (match useForgeStore). */
 const AGENT_DOT = {
@@ -171,26 +171,38 @@ export default function ResearchPanel() {
       className="mx-auto w-full min-w-0 max-w-[720px] pb-16 md:pb-24"
       aria-label="About Babel"
     >
-      <SectionShell num="01" title="What Babel Is">
+      <SectionShell num="01" title="What Babel is">
         <div className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>
-            Babel sends a single prompt to three AI models simultaneously:
-            GPT-4o mini, Phi-4 mini reasoning, and Mistral Small. Each model
-            responds independently, then reviews the other two responses, then
-            a synthesis pass reconciles all three into one unified answer.
+            Babel sends a single prompt to three AI models: GPT-4o mini, Phi-4
+            mini reasoning, and Mistral Small. Each model responds without seeing
+            the others, but they then launch into a debate.
           </p>
           <p>
-            The goal is not to find the &apos;best&apos; model. It is to use
-            disagreement as a feature; to surface where models converge, where
-            they diverge, and what each reasoning style contributes that the
-            others miss.
+            In round two, each model reads the other two responses and
+            identifies what it agrees with, challenges, and finds missing. In
+            round three, each model responds directly to the challenges directed
+            at it; this is where concessions happen, positions harden, and
+            genuine disagreement becomes visible. In round four, each model
+            states its final position.
+          </p>
+          <p>
+            A synthesis pass then reconciles all four rounds into one answer,
+            explicitly noting which points reached consensus, which were
+            conceded, and which remained contested to the end.
+          </p>
+          <p>
+            The goal is not to find the best model. It is to use disagreement
+            as a research instrument to surface where models converge, where
+            they hold firm under challenge, and what the structure of their
+            disagreement reveals about how they reason.
           </p>
         </div>
       </SectionShell>
 
       <SectionDivider />
 
-      <SectionShell num="02" title="Why Model Disagreement Is Worth Studying">
+      <SectionShell num="02" title="Why model disagreement is worth studying">
         <div className="flex flex-col gap-6">
           <ObservationCard title="Divergence as signal">
             When models trained on similar data still disagree on the same
@@ -221,11 +233,11 @@ export default function ResearchPanel() {
 
       <SectionDivider />
 
-      <SectionShell num="03" title="How We Measure Disagreement">
+      <SectionShell num="03" title="How we measure disagreement">
         <div className="space-y-8 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              Semantic Divergence
+              Semantic divergence
             </h3>
             <p>
               Each agent response is converted into a 1,536-dimension embedding
@@ -260,7 +272,7 @@ export default function ResearchPanel() {
 
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              Pairwise Scoring
+              Pairwise scoring
             </h3>
             <p>
               Three pairwise scores are computed per debate: A↔B, A↔C, and B↔C.
@@ -277,7 +289,7 @@ export default function ResearchPanel() {
 
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              What The Triangle Shows
+              What the triangle shows
             </h3>
             <p className="mb-6">
               The triangle is not decorative. Each corner represents a model.
@@ -291,7 +303,7 @@ export default function ResearchPanel() {
 
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              Debate Structure
+              Debate structure
             </h3>
             <p className="mb-5">
               Each debate runs four rounds:
@@ -306,7 +318,7 @@ export default function ResearchPanel() {
                     Round 1
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — Independent:
+                    — independent:
                   </span>{' '}
                   Three models answer without seeing each other. This is their
                   uncontaminated position.
@@ -321,7 +333,7 @@ export default function ResearchPanel() {
                     Round 2
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — Cross-review:
+                    — cross-review:
                   </span>{' '}
                   Each model reads the other two responses and identifies what it
                   agrees with, challenges, and finds missing.
@@ -336,7 +348,7 @@ export default function ResearchPanel() {
                     Round 3
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — Rebuttal:
+                    — rebuttal:
                   </span>{' '}
                   Each model responds directly to the challenges directed at it.
                   This is where concessions happen.
@@ -351,7 +363,7 @@ export default function ResearchPanel() {
                     Round 4
                   </span>{' '}
                   <span className="font-bold text-[var(--text-primary)]">
-                    — Final position:
+                    — final position:
                   </span>{' '}
                   Each model states its closing argument having seen the full
                   debate.
@@ -371,7 +383,7 @@ export default function ResearchPanel() {
 
       <SectionDivider />
 
-      <SectionShell num="04" title="Where This Goes">
+      <SectionShell num="04" title="Where this goes">
         <div className="grid gap-6 md:grid-cols-2">
           <DirectionCard title="More models, more diversity">
             Adding models from additional labs, like Gemini, Grok, Command R,
@@ -399,7 +411,7 @@ export default function ResearchPanel() {
 
       <SectionDivider />
 
-      <SectionShell num="05" title="Limitations and Open Questions">
+      <SectionShell num="05" title="Limitations and open questions">
         <div
           className="space-y-5 text-[15px] leading-[1.85] text-[#6B5E4E]"
           style={{ fontFamily: 'var(--font-body), Georgia, serif' }}

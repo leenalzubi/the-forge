@@ -139,24 +139,24 @@ function useWorkflowSteps(state) {
 
   return {
     steps: [
-      { key: 'prompt', label: 'Prompt Received', state: s1, icon: null },
+      { key: 'prompt', label: 'Prompt received', state: s1, icon: null },
       {
         key: 'r1',
-        label: 'Round 1: Independent',
+        label: 'Round 1: independent',
         state: s2,
         icon: 'agents',
         divergenceIdx: 0,
       },
-      { key: 'cross', label: 'Round 2: Cross-Review', state: s3, icon: 'arrows' },
+      { key: 'cross', label: 'Round 2: cross-review', state: s3, icon: 'arrows' },
       {
         key: 'rebuttal',
-        label: 'Round 3: Rebuttals',
+        label: 'Round 3: rebuttals',
         state: s4,
         icon: 'arrows',
       },
       {
         key: 'finalp',
-        label: 'Round 4: Final Positions',
+        label: 'Round 4: final positions',
         state: s5,
         icon: 'agents',
       },
@@ -476,8 +476,8 @@ export default function WorkflowTimeline({
         className={`px-3 py-0 md:px-0 md:py-0 ${collapsed ? 'hidden' : 'max-md:hidden md:block'}`}
       >
         <div className="mb-4 flex items-center justify-between gap-2 pr-0">
-          <h2 className="font-mono text-[11px] font-semibold tracking-widest text-[var(--text-muted)]">
-            WORKFLOW
+          <h2 className="font-mono text-[11px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+            Workflow
           </h2>
           <button
             type="button"
