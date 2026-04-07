@@ -123,29 +123,33 @@ function AgentRoundColumn({ agentSpec, responseText, timer }) {
   return <RoundAgentWaiting title={agentSpec.name} color={agentSpec.color} />
 }
 
-/** @param {{ scores: { ab: number, ac: number, bc: number }, initials: { a: string, b: string, c: string }, colors: { a: string, b: string, c: string }, config: { agentA: { name: string, color: string }, agentB: { name: string, color: string }, agentC: { name: string, color: string } } }} props */
-function DivergenceRow({ scores, initials, colors, config }) {
+/** @param {{ scores: { ab: number, ac: number, bc: number }, initials: { a: string, b: string, c: string }, colors: { a: string, b: string, c: string }, config: { agentA: { name: string, color: string }, agentB: { name: string, color: string }, agentC: { name: string, color: string } }, divergenceReady: boolean }} props */
+function DivergenceRow({ scores, initials, colors, config, divergenceReady }) {
   const pct = (n) => Math.min(100, Math.max(0, Math.round(Number(n) * 100)))
   return (
     <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[var(--border)] pt-6 md:flex-row md:items-center md:justify-between">
-      <div className="flex flex-wrap gap-2">
-        <DivergenceChip
-          label={`${initials.a}–${initials.b}`}
-          color={colors.a}
-          pct={pct(scores.ab)}
-        />
-        <DivergenceChip
-          label={`${initials.a}–${initials.c}`}
-          color={colors.c}
-          pct={pct(scores.ac)}
-        />
-        <DivergenceChip
-          label={`${initials.b}–${initials.c}`}
-          color={colors.b}
-          pct={pct(scores.bc)}
-        />
-      </div>
-      <div className="flex shrink-0 justify-center md:justify-end">
+      {divergenceReady ? (
+        <div className="flex flex-wrap gap-2">
+          <DivergenceChip
+            label={`${initials.a}–${initials.b}`}
+            color={colors.a}
+            pct={pct(scores.ab)}
+          />
+          <DivergenceChip
+            label={`${initials.a}–${initials.c}`}
+            color={colors.c}
+            pct={pct(scores.ac)}
+          />
+          <DivergenceChip
+            label={`${initials.b}–${initials.c}`}
+            color={colors.b}
+            pct={pct(scores.bc)}
+          />
+        </div>
+      ) : null}
+      <div
+        className={`flex shrink-0 justify-center md:justify-end${divergenceReady ? '' : ' md:ml-auto md:w-full'}`}
+      >
         <InfluenceMap
           scores={scores}
           initials={initials}
@@ -153,6 +157,7 @@ function DivergenceRow({ scores, initials, colors, config }) {
           influenceReport={null}
           influenceLoading={false}
           showPositionTracks={false}
+          divergenceReady={divergenceReady}
         />
       </div>
     </div>
@@ -163,6 +168,7 @@ function DivergenceRow({ scores, initials, colors, config }) {
  * @param {{
  *   roundNum: number,
  *   scores: { ab: number, ac: number, bc: number, average: number },
+ *   divergenceReady: boolean,
  *   round: { agentA: string, agentB: string, agentC: string },
  *   config: {
  *     agentA: { name: string, color: string },
@@ -176,7 +182,14 @@ function DivergenceRow({ scores, initials, colors, config }) {
  *   },
  * }} props
  */
-function RoundCard({ roundNum, scores, round, config, agentTimers }) {
+function RoundCard({
+  roundNum,
+  scores,
+  divergenceReady,
+  round,
+  config,
+  agentTimers,
+}) {
   const { agentA, agentB, agentC } = config
 
   const initials = {
@@ -224,6 +237,7 @@ function RoundCard({ roundNum, scores, round, config, agentTimers }) {
           initials={initials}
           colors={colors}
           config={config}
+          divergenceReady={divergenceReady}
         />
       ) : null}
     </section>

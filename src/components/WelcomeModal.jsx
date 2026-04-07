@@ -53,12 +53,21 @@ export default function WelcomeModal({ onClose }) {
           >
             Babel
           </h1>
-          <p
-            className="mb-10 max-w-[320px] text-[17px] leading-[1.7] text-[#6B5E4E]"
+          <div
+            className="mb-10 max-w-[320px] space-y-4 text-[17px] leading-[1.7] text-[#6B5E4E]"
             style={{ fontFamily: 'var(--font-body)' }}
           >
-            An AI debate experiment using three different models.
-          </p>
+            <p>
+              Three AI models debate the same question. All three know who they
+              are arguing with and are competing to write the sharpest
+              cross-review. Then, we track for whether they actually change
+              their minds.
+            </p>
+            <p>
+              Every debate contributes to an open dataset studying how language
+              models reason, compete, and influence each other.
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleStart}

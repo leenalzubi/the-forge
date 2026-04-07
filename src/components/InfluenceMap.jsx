@@ -38,9 +38,6 @@ function BetweenModelDivergenceTriangle({ scores, initials }) {
 
   return (
     <div className="flex flex-col items-center">
-      <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-        Between-model divergence
-      </p>
       <svg width={280} height={240} viewBox="0 0 280 240" className="overflow-visible">
         <path
           d={PATH_AB}
@@ -343,6 +340,7 @@ function PositionTrack({ agentSpec, row, config }) {
  *   influenceReport: Record<string, unknown> | null,
  *   influenceLoading?: boolean,
  *   showPositionTracks?: boolean,
+ *   divergenceReady?: boolean,
  * }} props
  */
 export default function InfluenceMap({
@@ -352,6 +350,7 @@ export default function InfluenceMap({
   influenceReport,
   influenceLoading = false,
   showPositionTracks = true,
+  divergenceReady = true,
 }) {
   const summary = useMemo(() => {
     if (!influenceReport) {
@@ -380,7 +379,18 @@ export default function InfluenceMap({
   return (
     <div className="flex w-full max-w-4xl flex-col gap-8">
       <section aria-label="Between-model divergence">
-        <BetweenModelDivergenceTriangle scores={scores} initials={initials} />
+        <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+          Between-model divergence
+        </p>
+        {divergenceReady ? (
+          <BetweenModelDivergenceTriangle scores={scores} initials={initials} />
+        ) : (
+          <div className="flex min-h-[240px] w-full max-w-[280px] flex-col items-center justify-center self-center px-3">
+            <p className="text-center font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text-muted)]">
+              Divergence analysis runs after the debate completes
+            </p>
+          </div>
+        )}
       </section>
 
       {showPositionTracks ? (

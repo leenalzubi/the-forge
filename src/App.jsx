@@ -120,13 +120,7 @@ function HeaderAgentPill({ name, color }) {
 
 export default function App() {
   const { state, dispatch } = useForge()
-  const {
-    runDebate,
-    resumeDebate,
-    stageLabel,
-    resetAndRetry,
-    resetForEditPrompt,
-  } = useDebateEngine()
+  const { runDebate, resetAndRetry, resetForEditPrompt } = useDebateEngine()
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
@@ -143,14 +137,6 @@ export default function App() {
   )
 
   const running = state.status === 'running'
-  const partial = state.status === 'partial'
-
-  const handleResume = useCallback(() => {
-    const st = state.lastCompletedStage
-    if (st) {
-      void resumeDebate(st)
-    }
-  }, [resumeDebate, state.lastCompletedStage])
 
   const navigateMainTab = useCallback(
     /** @param {'babel' | 'findings' | 'about'} tab */ (tab) => {
@@ -225,6 +211,16 @@ export default function App() {
   }, [state.status])
 
   useEffect(() => {
+    if (state.status !== 'error' || state.error == null) return
+    requestAnimationFrame(() => {
+      errorBannerRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    })
+  }, [state.status, state.error])
+
+  useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return
       if (state.status === 'running') {
@@ -265,6 +261,7 @@ export default function App() {
   const promptInputRef = useRef(
     /** @type {{ focusPrompt: () => void } | null} */ (null)
   )
+  const errorBannerRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
   const round1Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const round2Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
@@ -462,40 +459,19 @@ export default function App() {
               />
             </div>
 
-            <ErrorBanner
-              error={state.error}
-              onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
-              onRetry={resetAndRetry}
-              onEditPrompt={() => {
-                resetForEditPrompt()
-                requestAnimationFrame(() =>
-                  promptInputRef.current?.focusPrompt()
-                )
-              }}
-            />
-
-            {partial && state.lastCompletedStage ? (
-              <div
-                className="mb-6 rounded-forge-card border border-dashed border-amber-600/40 bg-amber-500/10 px-4 py-3 sm:px-5"
-                role="status"
-              >
-                <p className="font-mono text-[12px] leading-relaxed text-amber-950/90">
-                  Debate ended early — showing results up to{' '}
-                  <span className="font-semibold">
-                    {stageLabel(state.lastCompletedStage)}
-                  </span>
-                  .
-                </p>
-                <button
-                  type="button"
-                  onClick={handleResume}
-                  disabled={running}
-                  className="mt-3 rounded-[6px] border border-amber-800/35 bg-[var(--bg-surface)] px-3 py-2 font-mono text-[11px] font-semibold text-amber-950/90 transition hover:border-amber-800/55 disabled:opacity-50"
-                >
-                  Resume debate
-                </button>
-              </div>
-            ) : null}
+            <div ref={errorBannerRef} className="scroll-mt-4">
+              <ErrorBanner
+                error={state.error}
+                onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
+                onRetry={resetAndRetry}
+                onEditPrompt={() => {
+                  resetForEditPrompt()
+                  requestAnimationFrame(() =>
+                    promptInputRef.current?.focusPrompt()
+                  )
+                }}
+              />
+            </div>
 
             <div className="mt-2 flex flex-col gap-12 md:gap-14">
               {showEmptyState ? (
@@ -507,6 +483,8 @@ export default function App() {
 
               {sortedRounds.map((round, roundIdx) => {
                 const scores = state.divergenceScores[roundIdx] ?? DEFAULT_SCORES
+                const divergenceReady =
+                  state.divergenceScores[roundIdx] != null
                 const review = state.reviews.find(
                   (r) => r.roundNum === round.roundNum
                 )
@@ -529,6 +507,7 @@ export default function App() {
                       <RoundCard
                         roundNum={round.roundNum}
                         scores={scores}
+                        divergenceReady={divergenceReady}
                         round={round}
                         config={cfg}
                         agentTimers={state.agentTimers}
@@ -558,6 +537,7 @@ export default function App() {
                         <FinalPositionCard
                           config={cfg}
                           scores={scores}
+                          divergenceReady={divergenceReady}
                           finalPositions={state.finalPositions}
                           finalPositionTimers={state.finalPositionTimers}
                           agentTimers={state.agentTimers}
@@ -599,7 +579,9 @@ export default function App() {
                   />
                 </>
               ) : null}
-              {state.status === 'complete' || state.status === 'partial' ? (
+              {state.status === 'complete' ||
+              state.status === 'partial' ||
+              state.status === 'error' ? (
                 <>
                   {state.synthesis != null &&
                   state.divergenceScores.length > 0 ? (

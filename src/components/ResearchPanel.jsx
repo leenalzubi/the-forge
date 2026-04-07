@@ -144,9 +144,9 @@ function ObservationCard({ title, children }) {
       <h3 className="text-base font-semibold text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="mt-3 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
+      <div className="mt-3 space-y-4 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
         {children}
-      </p>
+      </div>
     </div>
   )
 }
@@ -160,9 +160,9 @@ function DirectionCard({ title, children }) {
       <h3 className="text-base font-semibold text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="mt-3 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
+      <div className="mt-3 space-y-4 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
         {children}
-      </p>
+      </div>
     </div>
   )
 }
@@ -193,33 +193,25 @@ export default function ResearchPanel() {
       <SectionShell num="01" title="What Babel is">
         <div className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>
-            Babel sends a single prompt to three AI models: GPT-4o mini, Phi-4
-            mini reasoning, and Mistral Small. Each model responds without seeing
-            the others, but they then launch into a debate.
+            Babel sends one question to three AI models. Each answers without
+            seeing the others. Then they read each other&apos;s responses and the
+            debate begins.
           </p>
           <p>
-            In round two, each model reads the other two responses, identifies
-            what it agrees with, challenges what it disagrees with, and defends
-            its own position against anticipated challenges. In round three,
-            each model states its final position having seen everything.
+            The models are told who they are arguing with. In round two, each
+            model reviews the other two, challenges what it disputes, and defends
+            its own position. They are competing: the model judged sharpest by
+            its peers earns the right to synthesize.
+          </p>
+          <p>In round three, each model states its final position.</p>
+          <p>
+            After the debate, Babel measures whether each model actually changed
+            its view between round one and round three, and whether that change
+            came from a genuine argument or from social pressure.
           </p>
           <p>
-            Synthesis is optional. When enabled, a final pass reconciles all
-            three rounds into one answer, explicitly noting which points reached
-            consensus, which were conceded, and which remained contested to the
-            end.
-          </p>
-          <p>
-            The goal is not to find the best model. It is to use disagreement
-            as a research instrument to surface where models converge, where
-            they hold firm under challenge, and what the structure of their
-            disagreement reveals about how they reason.
-          </p>
-          <p>
-            Each model receives the same neutral system prompt: answer the
-            question honestly and directly. There are no persona instructions
-            and no personality nudges. The differences you see are the models
-            themselves.
+            The goal is not to find the best model. It is to study how models
+            reason under challenge and whether they can be genuinely influenced.
           </p>
         </div>
       </SectionShell>
@@ -229,28 +221,57 @@ export default function ResearchPanel() {
       <SectionShell num="02" title="Why model disagreement is worth studying">
         <div className="flex flex-col gap-6">
           <ObservationCard title="Divergence as signal">
-            When models trained on similar data still disagree on the same
-            prompt, that divergence is data.
+            <p>
+              When models trained on similar data still disagree on the same
+              prompt, that divergence is data. It points to genuinely contested
+              knowledge, not stylistic variation.
+            </p>
           </ObservationCard>
           <ObservationCard title="Reasoning style taxonomy">
-            Different model families reason differently. Some toward caution,
-            some toward conviction, some toward synthesis. Those patterns are
-            not yet systematically mapped at the prompt level.
+            <p>
+              Different model families reason differently. Some move toward
+              caution, some toward conviction, some toward synthesis. Those
+              patterns are not yet systematically mapped at the prompt level.
+            </p>
           </ObservationCard>
           <ObservationCard title="Synthesis as a benchmark problem">
-            There is no established way to evaluate whether a synthesized
-            answer is better than any individual response. Every debate logged
-            here generates exactly that comparison.
+            <p>
+              There is no established way to evaluate whether a synthesized
+              answer is better than any individual response. Every debate logged
+              here generates exactly that comparison.
+            </p>
           </ObservationCard>
           <ObservationCard title="Prompt sensitivity">
-            Small changes in how a question is framed likely produce
-            dramatically different divergence patterns. Logging at scale
-            reveals how robust or brittle models are to phrasing.
+            <p>
+              Small changes in how a question is framed likely produce different
+              divergence patterns. Logging at scale reveals how robust or brittle
+              models are to phrasing.
+            </p>
           </ObservationCard>
           <ObservationCard title="Naturalistic data">
-            Most multi-model research happens in controlled lab conditions. Babel
-            collects real questions from real people, which is a different and
-            valuable dataset.
+            <p>
+              Most multi-model research happens in controlled lab conditions.
+              Babel collects real questions from real people. That is a different
+              and more valuable dataset.
+            </p>
+          </ObservationCard>
+          <ObservationCard title="Influence and opinion dynamics">
+            <p>
+              Models are trained to be helpful and agreeable. This creates a
+              tension: when challenged by another model, will it update because
+              the argument is better, or because it is trained to defer?
+            </p>
+            <p>
+              The distinction between genuine updating and social capitulation
+              matters. It determines how much we can trust multi-model systems to
+              reach reliable conclusions rather than socially converged ones.
+            </p>
+            <p>
+              Babel tracks this explicitly. Every position change is classified.
+              Over many debates, the pattern of which models change, why, and in
+              response to which arguments becomes a dataset about model reasoning
+              under pressure.
+            </p>
           </ObservationCard>
         </div>
       </SectionShell>
@@ -261,16 +282,22 @@ export default function ResearchPanel() {
         <div className="space-y-8 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
-              Semantic differences
+              Claim-based disagreement
             </h3>
-            <p>
-              Each agent response is converted into a 1,536-dimension embedding
-              vector using OpenAI&apos;s text-embedding-3-small model. These
-              vectors encode vocabulary (not meaning); two responses that say
-              the same thing in different words will score low divergence. Two
-              responses that reach different conclusions will score high, even
-              if they share common phrases.
-            </p>
+            <div className="space-y-5">
+              <p>
+                After round one, each response is analysed to extract the most
+                specific, falsifiable assertions made by each model. Position
+                mapping tracks whether each model agrees, disagrees, partially
+                agrees, or stays silent on each claim. Divergence is calculated
+                from these positions directly.
+              </p>
+              <p>
+                The extracting model is one of the debaters. This introduces
+                bias. The claim list reflects one model&apos;s reading of what was
+                said, not an independent record.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -278,10 +305,10 @@ export default function ResearchPanel() {
               Pairwise scoring
             </h3>
             <p>
-              This means a debate where two models agree but a third dissents
-              will show two low-divergence edges and one high-divergence edge.
-              This is visually distinct from a debate where all three diverge
-              equally.
+              Three pairwise scores are computed per debate: GPT vs Phi-4, GPT
+              vs Mistral, and Phi-4 vs Mistral. A debate where two models agree
+              but a third dissents shows two low-divergence edges and one
+              high-divergence edge.
             </p>
           </div>
 
@@ -290,83 +317,74 @@ export default function ResearchPanel() {
               What the triangle shows
             </h3>
             <p className="mb-6">
-              Each corner represents a model, and each edge represents how
-              differently those two models reasoned about the same question. A
-              tight triangle means consensus, a stretched triangle means
-              genuine disagreement, and a lopsided triangle means two models
-              aligned against a third.
+              Each corner is a model. Each edge shows how differently those two
+              models reasoned about the same question. Edge thickness reflects
+              divergence. A tight triangle means consensus. A lopsided triangle
+              means two models aligned against a third.
             </p>
             <TriangleDivergenceIllustration />
           </div>
 
           <div>
             <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+              Position change detection
+            </h3>
+            <div className="space-y-5">
+              <p>
+                Babel compares each model&apos;s round one response to its round
+                three response using embedding distance. High distance means the
+                position shifted. Low distance means it held.
+              </p>
+              <p>
+                Each model also self-reports: did its position change, what
+                caused it, and what would have been needed to change it further.
+                The self-report is cross-checked against the embedding distance to
+                distinguish genuine updates from social capitulation.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
               Debate structure
             </h3>
-            <p className="mb-5">
-              Each debate runs three rounds, with optional synthesis:
-            </p>
-            <ol className="list-none space-y-0">
-              <li className="border-b border-dashed border-[var(--border)] pb-4">
-                <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  <span
-                    className="font-mono font-medium text-[#8B1A1A]"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    Round 1
-                  </span>{' '}
-                  <span className="font-bold text-[var(--text-primary)]">
-                    — independent:
-                  </span>{' '}
-                  Three models answer without seeing each other. This is their
-                  uncontaminated position.
-                </p>
-              </li>
-              <li className="border-b border-dashed border-[var(--border)] py-4">
-                <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  <span
-                    className="font-mono font-medium text-[#8B1A1A]"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    Round 2
-                  </span>{' '}
-                  <span className="font-bold text-[var(--text-primary)]">
-                    — cross-review and rebuttal:
-                  </span>{' '}
-                  Each model reads the other two responses, challenges what it
-                  disagrees with, and defends its own position against
-                  anticipated challenges.
-                </p>
-              </li>
-              <li className="border-b border-dashed border-[var(--border)] py-4">
-                <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  <span
-                    className="font-mono font-medium text-[#8B1A1A]"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    Round 3
-                  </span>{' '}
-                  <span className="font-bold text-[var(--text-primary)]">
-                    — final positions:
-                  </span>{' '}
-                  Each model states its closing argument having seen the full
-                  debate.
-                </p>
-              </li>
-              <li className="pt-4">
-                <p className="font-[family-name:var(--font-body)] text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-                  <span
-                    className="font-mono font-medium text-[#8B1A1A]"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    Synthesis (optional)
-                  </span>
-                  : When enabled, a final pass reconciles all three positions,
-                  weighting unanimous points highly, flagging genuine
-                  disagreements, and explicitly noting any concessions made.
-                </p>
-              </li>
-            </ol>
+            <div className="space-y-5">
+              <p>
+                <span
+                  className="font-mono font-medium text-[#8B1A1A]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Round 1
+                </span>
+                : Three models answer independently. This is their uncontaminated
+                position.
+              </p>
+              <p>
+                <span
+                  className="font-mono font-medium text-[#8B1A1A]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Round 2
+                </span>
+                : Each model reads the other two responses, challenges what it
+                disputes, and defends its own position. Peer scores determine who
+                earns synthesis.
+              </p>
+              <p>
+                <span
+                  className="font-mono font-medium text-[#8B1A1A]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Round 3
+                </span>
+                : Each model states its final position having seen the full
+                debate.
+              </p>
+              <p>
+                Synthesis is optional. When enabled, the model that scored
+                highest in peer evaluation writes the synthesis.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -378,36 +396,20 @@ export default function ResearchPanel() {
               style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
             >
               <p>
-                The synthesis model is one of the three debaters. Having formed
-                a position in round one, it cannot be a neutral arbiter of the
-                debate it participated in. This is a structural problem with no
-                perfect solution at this scale.
+                The synthesis model participated in the debate. It cannot be a
+                neutral arbiter. After synthesis, the two non-synthesizing models
+                score it for fairness. If either scores below six or flags bias,
+                the synthesis is marked as peer-flagged.
               </p>
-              <p>
-                My partial solution: after synthesis is generated, the two
-                non-synthesizing agents are asked to score it for fairness.
-                Each validator reads the original prompt, their own round one
-                response, and the synthesis, then scores it out of ten and flags
-                any detected bias or missing positions. If either validator
-                scores below six or flags the synthesis, it is marked as
-                peer-flagged in the audit trail.
-              </p>
-              <p className="my-8 text-[17px] font-semibold leading-[1.75] text-[var(--text-primary)]">
+              <p className="text-[17px] font-semibold leading-[1.75] text-[var(--text-primary)]">
                 This reduces the problem. It does not solve it.
               </p>
               <p>
-                It is important to reiterate that validators are also language
-                models with their own positions in the debate. A validator that
-                held firm on a point the synthesis ignored will naturally flag
-                that as missing, which may reflect genuine bias in the synthesis,
-                or may simply reflect the validator&apos;s own stubbornness. The
-                two are indistinguishable from the outside.
-              </p>
-              <p>
-                What peer validation does provide is a signal. A synthesis that
-                receives high scores from both validators is more likely to be
-                balanced than one that does not. Over many debates, the rate of
-                flagged syntheses becomes a meaningful dataset point.
+                The validators are also debaters with their own positions. A
+                validator that held firm on a point the synthesis ignored will
+                flag it as missing. That may reflect genuine synthesis bias, or
+                the validator&apos;s own stubbornness. The two are
+                indistinguishable from the outside.
               </p>
             </div>
           </div>
@@ -419,25 +421,34 @@ export default function ResearchPanel() {
       <SectionShell num="04" title="Future directions">
         <div className="grid gap-6 md:grid-cols-2">
           <DirectionCard title="More models, more diversity">
-            Adding models from additional labs, like Gemini, Grok, Command R,
-            would increase reasoning diversity and make divergence patterns more
-            meaningful.
+            <p>
+              Adding models from additional labs would increase reasoning
+              diversity. The three current models share significant training
+              overlap. Divergence patterns here likely understate true model
+              disagreement.
+            </p>
           </DirectionCard>
           <DirectionCard title="Prompt categorisation">
-            Tagging debates by topic (technical, ethical, strategic, creative)
-            would allow divergence patterns to be studied by domain, revealing
-            which categories produce the most contested outputs.
+            <p>
+              Tagging debates by topic would allow divergence patterns to be
+              studied by domain. Some categories likely produce more contested
+              outputs than others.
+            </p>
           </DirectionCard>
           <DirectionCard title="Human evaluation layer">
-            Adding a simple post-synthesis rating (&quot;Was this better than
-            any single response?&quot;) would create a feedback signal for
-            studying what good synthesis looks like.
+            <p>
+              A simple post-debate rating from the user would create a feedback
+              signal for studying what good synthesis looks like from a human
+              perspective.
+            </p>
           </DirectionCard>
           <DirectionCard title="Academic partnership">
-            The dataset this tool generates (structured, timestamped,
-            multi-model debates on naturalistic prompts) has potential value for
-            NLP and AI alignment researchers studying model behaviour and
-            consensus formation.
+            <p>
+              The dataset Babel generates has potential value for NLP and AI
+              alignment researchers. Structured, timestamped, multi-model debates
+              on naturalistic prompts with position change tracking is not a
+              dataset that currently exists elsewhere.
+            </p>
           </DirectionCard>
         </div>
       </SectionShell>
@@ -451,30 +462,28 @@ export default function ResearchPanel() {
         >
           <p>
             These three models were selected for reliability on the GitHub
-            Models free tier, not for maximum diversity. GPT-4o mini, Phi-4,
-            and Mistral Small share significant training overlap. The divergence
-            patterns you see here likely understate true model disagreement.
+            Models free tier. GPT-4o mini, Phi-4, and Mistral Small share
+            significant training overlap. Divergence patterns here likely
+            understate true model disagreement.
           </p>
           <p>
-            Semantic divergence measures how differently models reasoned, not
-            whether either was correct. A high divergence score on a factual
-            question may simply mean one model is wrong.
+            Claim extraction is automated and imperfect. The model extracting
+            claims may miss positions or frame assertions in ways that skew
+            agreement mapping.
           </p>
           <p>
-            The synthesis model is one of the three debaters. Its synthesis
-            will likely favour its own original position in subtle ways. This is
-            a known limitation with no clean solution at this scale.
+            Position change detection via embeddings captures content shift but
+            not emphasis or confidence. A model can reframe its argument while
+            technically maintaining the same conclusion.
           </p>
           <p>
-            The concession detection is heuristic, as it looks for signal words
-            like &apos;I concede&apos; or &apos;valid point&apos;. A model can
-            capitulate substantively without using these words, or use them
-            rhetorically without genuinely conceding. Treat concession counts as
-            directional, not definitive.
+            Concession detection uses signal words. A model can capitulate
+            without using those words, or use them rhetorically without genuinely
+            conceding. Treat counts as directional.
           </p>
           <p>
-            This dataset is small. Patterns visible in the Findings tab after
-            50 debates may not hold at 500. We are in early days.
+            The dataset is small. Patterns visible after 50 debates may not hold
+            at 500.
           </p>
         </div>
       </SectionShell>
@@ -485,15 +494,13 @@ export default function ResearchPanel() {
         <div className="space-y-6 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>
             Built by Leen Al-Zu&apos;bi, Senior Product Manager at Softchoice,
-            as self-directed study in AI research. No lab, no grant, just
-            genuine curiosity about how these models think and where they
-            disagree.
+            as self-directed study in AI research. No lab, no grant, just genuine
+            curiosity about how these models think and where they disagree.
           </p>
           <p>
-            This tool is free to use. The dataset it generates is open, and
-            every debate logged here is visible in the Findings tab. If you
-            find it useful, run a debate. If you find it interesting, reach
-            out.
+            This tool is free to use. The dataset is open. Every debate logged
+            here is visible in the Findings tab. If you find it useful, run a
+            debate. If you find it interesting, reach out.
           </p>
           <p>
             <a

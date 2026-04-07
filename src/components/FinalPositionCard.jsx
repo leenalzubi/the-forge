@@ -168,6 +168,7 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
  *   reviewTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   rebuttalTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   scores: { ab: number, ac: number, bc: number, average?: number } | null,
+ *   divergenceReady?: boolean,
  *   influenceReport?: Record<string, unknown> | null,
  *   influenceLoading?: boolean,
  * }} props
@@ -175,6 +176,7 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
 function FinalPositionCard({
   config,
   scores = null,
+  divergenceReady = false,
   finalPositions,
   finalPositionTimers,
   agentTimers,
@@ -261,7 +263,7 @@ function FinalPositionCard({
         />
       </div>
 
-      {showTriangle && scores ? (
+      {showInfluenceSection && scores ? (
         <div className="border-t border-dashed border-[var(--border)] pt-6">
           <InfluenceMap
             scores={scores}
@@ -270,6 +272,7 @@ function FinalPositionCard({
             influenceReport={influenceReport}
             influenceLoading={influenceLoading}
             showPositionTracks
+            divergenceReady={divergenceReady}
           />
         </div>
       ) : null}

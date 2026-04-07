@@ -12,15 +12,8 @@ import {
 } from '../lib/modelCallErrors.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
 import { readBabelSynthesisEnabled } from '../lib/babelSynthesisPref.js'
-import { logDebate } from '../lib/logDebate.js'
 import { useForge } from '../store/useForgeStore.js'
-import {
-  resumeFromReviews,
-  resumeFromRound1,
-  runPipelineAfterRound1,
-  runPipelineFromFinalsOnward,
-  scheduleDebateAudit,
-} from './debatePipeline.js'
+import { runPipelineAfterRound1 } from './debatePipeline.js'
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -45,21 +38,6 @@ async function tryModel(fn) {
     }
     throw e
   }
-}
-
-/** @param {string | null} stage */
-function stageLabel(stage) {
-  if (!stage) return 'last stage'
-  const map = {
-    round1: 'Round 1',
-    reviews: 'Round 2 (cross-review & rebuttal)',
-    rebuttals: 'rebuttals',
-    finalPositions: 'final positions',
-    synthesis: 'synthesis',
-    audit: 'audit',
-    validation: 'validation',
-  }
-  return map[stage] ?? String(stage)
 }
 
 export function useDebateEngine() {
@@ -206,165 +184,11 @@ export function useDebateEngine() {
           synthesisEnabled,
         })
       } catch (err) {
-        const snap = stateRef.current
-        const lastStage = snap.lastCompletedStage
-        if (lastStage) {
-          dispatch({ type: 'SET_PARTIAL', payload: true })
-          dispatch({ type: 'SET_STATUS', payload: 'partial' })
-          dispatch({ type: 'SET_ERROR', payload: null })
-          void logDebate({
-            prompt: snap.prompt,
-            rounds: snap.rounds,
-            reviews: snap.reviews,
-            rebuttals: snap.rebuttals,
-            finalPositions: snap.finalPositions,
-            divergenceScores: snap.divergenceScores,
-            synthesis: snap.synthesis,
-            validation: snap.validation,
-            config: snap.config,
-            synthesisWinner: snap.synthesisWinner,
-            influenceReport: snap.influenceReport,
-            is_partial: true,
-            last_completed_stage: lastStage,
-            timeout_count: snap.timeoutCount,
-          })
-        } else {
-          dispatch({ type: 'SET_ERROR', payload: normalizeDebateFailure(err) })
-          dispatch({ type: 'SET_STATUS', payload: 'error' })
-        }
-      }
-    },
-    [dispatch, uiSettings]
-  )
-
-  const resumeDebate = useCallback(
-    async (/** @type {string} */ fromStage) => {
-      const snap = state
-      const userPrompt = snap.prompt
-      const config = snap.config
-      const r0 = snap.rounds.find((r) => r.roundNum === 1)
-      const ra = String(r0?.agentA ?? snap.agentResponses?.a ?? '')
-      const rb = String(r0?.agentB ?? snap.agentResponses?.b ?? '')
-      const rc = String(r0?.agentC ?? snap.agentResponses?.c ?? '')
-      const rev = snap.reviews.find((r) => r.roundNum === 1)
-      const aRev = String(rev?.aReviews ?? snap.reviewResponses?.a ?? '')
-      const bRev = String(rev?.bReviews ?? snap.reviewResponses?.b ?? '')
-      const cRev = String(rev?.cReviews ?? snap.reviewResponses?.c ?? '')
-      const rbRef = snap.rebuttals ?? { a: '', b: '', c: '' }
-      const rebA = String(rbRef.a ?? '')
-      const rebB = String(rbRef.b ?? '')
-      const rebC = String(rbRef.c ?? '')
-      const fp = snap.finalPositions ?? { a: '', b: '', c: '' }
-      const fa = String(fp.a ?? '')
-      const fb = String(fp.b ?? '')
-      const fc = String(fp.c ?? '')
-
-      dispatch({ type: 'RESUME_DEBATE' })
-
-      try {
-        const synthesisEnabled = readBabelSynthesisEnabled()
-        if (fromStage === 'round1') {
-          await resumeFromRound1({
-            dispatch,
-            uiSettings,
-            userPrompt,
-            config,
-            ra,
-            rb,
-            rc,
-            synthesisEnabled,
-          })
-          return
-        }
-        if (fromStage === 'reviews') {
-          await resumeFromReviews({
-            dispatch,
-            uiSettings,
-            userPrompt,
-            config,
-            ra,
-            rb,
-            rc,
-            aRev,
-            bRev,
-            cRev,
-            synthesisEnabled,
-            existingSynthesisWinner: snap.synthesisWinner,
-          })
-          return
-        }
-        if (fromStage === 'rebuttals') {
-          await pause(2000)
-          await runPipelineFromFinalsOnward({
-            dispatch,
-            uiSettings,
-            userPrompt,
-            config,
-            ra,
-            rb,
-            rc,
-            aRev,
-            bRev,
-            cRev,
-            rebA,
-            rebB,
-            rebC,
-            synthesisEnabled,
-            synthesisWinner: snap.synthesisWinner,
-          })
-          return
-        }
-        if (fromStage === 'finalPositions') {
-          await pause(2000)
-          await runPipelineFromFinalsOnward({
-            dispatch,
-            uiSettings,
-            userPrompt,
-            config,
-            ra,
-            rb,
-            rc,
-            aRev,
-            bRev,
-            cRev,
-            rebA,
-            rebB,
-            rebC,
-            skipFinalModelCalls: true,
-            precomputedFinals: { a: fa, b: fb, c: fc },
-            synthesisEnabled,
-            synthesisWinner: snap.synthesisWinner,
-          })
-          return
-        }
-        if (fromStage === 'synthesis') {
-          const out = snap.synthesis?.output
-            ? String(snap.synthesis.output)
-            : ''
-          if (!out) {
-            throw new Error('No synthesis output to resume from.')
-          }
-          scheduleDebateAudit(
-            dispatch,
-            {
-              config,
-              prompt: userPrompt.trim(),
-              round1: { agentA: ra, agentB: rb, agentC: rc },
-              reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-              rebuttals: { a: rebA, b: rebB, c: rebC },
-              finalPositions: { agentA: fa, agentB: fb, agentC: fc },
-              synthesis: { output: out },
-            },
-            null
-          )
-          dispatch({ type: 'SET_STATUS', payload: 'complete' })
-        }
-      } catch (e) {
-        dispatch({ type: 'SET_ERROR', payload: normalizeDebateFailure(e) })
+        dispatch({ type: 'SET_ERROR', payload: normalizeDebateFailure(err) })
         dispatch({ type: 'SET_STATUS', payload: 'error' })
       }
     },
-    [dispatch, state, uiSettings]
+    [dispatch, uiSettings]
   )
 
   const resetAndRetry = useCallback(() => {
@@ -385,8 +209,6 @@ export function useDebateEngine() {
 
   return {
     runDebate,
-    resumeDebate,
-    stageLabel,
     resetAndRetry,
     resetForEditPrompt,
   }
