@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 // For client-side tab URLs under a subpath, set at build time:
 //   VITE_DEPLOY_PATH=babel  → history uses /babel/, /babel/about, etc.
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react(), tailwindcss()],
   appType: 'spa',
   server: {
