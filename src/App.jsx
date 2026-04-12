@@ -14,6 +14,7 @@ import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
+import ModelsAnnouncementBanner from './components/ModelsAnnouncementBanner.jsx'
 import PromptInput from './components/PromptInput.jsx'
 import FinalPositionCard from './components/FinalPositionCard.jsx'
 import ReviewCard from './components/ReviewCard.jsx'
@@ -448,6 +449,7 @@ export default function App() {
           <ResearchPanel />
         ) : (
           <>
+            <ModelsAnnouncementBanner />
             <div className="mb-10 shrink-0">
               <PromptInput
                 ref={promptInputRef}

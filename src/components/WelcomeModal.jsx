@@ -45,16 +45,16 @@ export default function WelcomeModal({ onClose }) {
         >
           ×
         </button>
-        <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-center">
           <h1
             id="welcome-modal-title"
-            className="mb-4 text-[36px] font-normal leading-none tracking-[0.08em] text-[#1C1814]"
+            className="mb-4 text-center text-[36px] font-normal leading-none tracking-[0.08em] text-[#1C1814]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Babel
           </h1>
           <div
-            className="mb-10 max-w-[320px] space-y-4 text-[17px] leading-[1.7] text-[#6B5E4E]"
+            className="mb-10 max-w-[320px] space-y-4 text-justify text-[17px] leading-[1.7] text-[#6B5E4E]"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             <p>
